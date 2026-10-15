@@ -1,0 +1,1334 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>마음의 숲</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&family=Gowun+Batang:wght@400;700&family=Silkscreen&display=swap">
+<style>
+/* Layout: one-screen pixel game — wood-tone top bar, full-bleed forest canvas, ivory dialog windows framed in wood */
+:root{
+  --ink:#2b2118; --wood:#9a6a3f; --wood-dark:#6b4526; --wood-light:#c79260;
+  --ivory:#fbf3df; --ivory-2:#f0e2c2; --moss:#4f7d47; --moss-dark:#365a32;
+  --text:#3a2c20; --muted:#7a6650; --alert:#b5523b; --amber:#c9902f;
+  --scrim:rgba(34,24,14,.5); --forest-deep:#2e4a2c;
+  --f-display:"Jua","Gowun Dodum",system-ui,sans-serif;
+  --f-body:"Gowun Dodum",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-story:"Gowun Batang","Nanum Myeongjo",serif;
+  --f-pixel:"Silkscreen",ui-monospace,monospace;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{background:var(--forest-deep);color:var(--text);font-family:var(--f-body);overflow:hidden}
+#app{height:100%;display:flex;flex-direction:column}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+
+/* top bar */
+.bar{background:var(--wood);border-bottom:3px solid var(--ink);box-shadow:inset 0 -4px 0 var(--wood-dark),inset 0 2px 0 var(--wood-light);
+  padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;align-items:center;gap:12px 20px;flex-wrap:wrap;position:relative;z-index:2}
+.brand{display:flex;align-items:center;gap:10px;color:var(--ivory)}
+.brand canvas{width:24px;height:31px;image-rendering:pixelated}
+.brand h1{margin:0;font-family:var(--f-display);font-weight:400;font-size:22px;line-height:1;text-shadow:0 2px 0 var(--ink)}
+.brand span{font-family:var(--f-pixel);font-size:10px;letter-spacing:.08em;color:var(--ivory-2);opacity:.85}
+nav{display:flex;gap:6px;overflow-x:auto;min-width:0;flex:1;justify-content:flex-end;scrollbar-width:none;padding-bottom:3px}
+nav::-webkit-scrollbar{display:none}
+.nb{flex:none;font-family:var(--f-display);font-size:15px;background:var(--wood-light);color:var(--ink);border:2px solid var(--ink);
+  box-shadow:0 3px 0 var(--ink);padding:6px 11px;position:relative;white-space:nowrap}
+.nb:hover{background:#d6a26e}
+.nb:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.nb b{font-family:var(--f-pixel);font-weight:400;font-size:10px;background:var(--alert);color:var(--ivory);padding:1px 4px;margin-left:4px;border:1px solid var(--ink)}
+@media (max-width:640px){ nav{flex-basis:100%;justify-content:flex-start} .bar{gap:8px} }
+
+/* stage */
+.stage{flex:1;position:relative;min-height:0}
+#world{width:100%;height:100%;display:block;touch-action:none;cursor:pointer;image-rendering:pixelated}
+.plaque{position:absolute;background:var(--ivory);border:3px solid var(--ink);box-shadow:0 0 0 3px var(--wood),0 0 0 6px var(--ink);padding:8px 12px;font-size:13px;line-height:1.45}
+.hud{left:calc(18px + env(safe-area-inset-left,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));max-width:calc(100% - 36px)}
+.hud strong{font-family:var(--f-display);font-weight:400;font-size:15px;color:var(--moss-dark)}
+.hud .num{font-family:var(--f-pixel);font-variant-numeric:tabular-nums}
+.hud .sub{color:var(--muted);font-size:12px}
+.keys{right:calc(18px + env(safe-area-inset-right,0px));top:18px;font-size:12px;color:var(--muted)}
+.keys kbd{font-family:var(--f-pixel);font-size:10px;background:var(--ivory-2);border:1px solid var(--ink);padding:0 4px;color:var(--ink)}
+@media (max-width:640px){ .keys{display:none} }
+.help{position:absolute;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));
+  font-family:var(--f-display);font-size:14px;background:var(--ivory);border:3px solid var(--ink);box-shadow:0 0 0 3px var(--wood),0 0 0 6px var(--ink);padding:7px 12px;color:var(--alert)}
+@media (max-width:640px){ .hud{bottom:calc(70px + env(safe-area-inset-bottom,0px))} }
+.toast{position:fixed;z-index:20;left:50%;top:calc(76px + env(safe-area-inset-top,0px));transform:translateX(-50%);max-width:calc(100% - 40px);text-align:center;font-size:14px;z-index:3}
+.mode{position:absolute;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);font-size:12px;color:var(--muted);display:none}
+
+/* dialog */
+.scrim{position:fixed;inset:0;background:var(--scrim);display:flex;align-items:center;justify-content:center;z-index:10;
+  padding-block:calc(14px + env(safe-area-inset-top,0px)) calc(14px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.panel{background:var(--ivory);width:min(580px,calc(100% - 14px));max-height:calc(100% - 14px);display:flex;flex-direction:column;
+  border:3px solid var(--ink);box-shadow:0 0 0 4px var(--wood),0 0 0 7px var(--ink),0 14px 0 7px rgba(0,0,0,.22)}
+.panel.wide{width:min(820px,calc(100% - 14px))}
+.ph{background:var(--wood);border-bottom:3px solid var(--ink);box-shadow:inset 0 2px 0 var(--wood-light);display:flex;align-items:center;gap:10px;padding:8px 10px 8px 16px}
+.ph h2{margin:0;flex:1;font-family:var(--f-display);font-weight:400;font-size:20px;color:var(--ivory);text-shadow:0 2px 0 var(--ink);text-wrap:balance}
+.x{background:var(--ivory);border:2px solid var(--ink);width:32px;height:32px;font-family:var(--f-pixel);font-size:14px;line-height:1;box-shadow:0 2px 0 var(--ink)}
+.pb{padding:18px 20px 20px;overflow:auto;display:flex;flex-direction:column;gap:16px;min-height:0;line-height:1.65;font-size:15px}
+.pb p{margin:0;max-width:62ch}
+.pb h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:17px;color:var(--moss-dark)}
+.lead{font-family:var(--f-story);font-size:17px}
+.muted{color:var(--muted);font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row.end{justify-content:flex-end}
+.btn{font-family:var(--f-display);font-size:16px;background:var(--moss);color:var(--ivory);border:2px solid var(--ink);box-shadow:0 3px 0 var(--ink);padding:8px 16px}
+.btn:hover{background:#5a8c51}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.ghost{background:var(--ivory);color:var(--ink)}
+.btn.ghost:hover{background:var(--ivory-2)}
+.btn.warn{background:var(--alert)}
+.btn.small{font-size:14px;padding:5px 11px}
+.link{background:none;border:none;padding:0;color:var(--muted);text-decoration:underline;font-size:13px}
+.box{border:2px solid var(--ink);background:#fffaf0;padding:12px 14px}
+.box.soft{border-style:dashed;border-color:var(--wood);background:transparent}
+.box.alert{border-color:var(--alert);background:#fbe9e1}
+.box.amber{border-color:var(--amber);background:#fbf0d6}
+label.fl{font-family:var(--f-display);font-size:15px;display:block;margin-bottom:6px}
+input[type=text],textarea{width:100%;box-sizing:border-box;font:inherit;font-size:16px;color:var(--text);background:#fffdf6;border:2px solid var(--ink);padding:9px 11px;box-shadow:inset 0 2px 0 var(--ivory-2)}
+textarea{font-family:var(--f-story);line-height:1.7;resize:vertical;min-height:150px}
+.count{font-family:var(--f-pixel);font-size:10px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.emos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:480px){ .emos{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.emo{position:relative}
+.emo input{position:absolute;opacity:0;inset:0}
+.emo label{display:flex;flex-direction:column;align-items:center;gap:4px;border:2px solid var(--ink);background:#fffaf0;padding:8px 4px 8px;cursor:pointer;text-align:center;height:100%;box-sizing:border-box}
+.emo canvas{width:40px;height:52px;image-rendering:pixelated}
+.emo b{font-family:var(--f-display);font-weight:400;font-size:16px}
+.emo small{font-size:11px;color:var(--muted);line-height:1.3}
+.emo input:checked+label{background:#e3eed6;box-shadow:inset 0 0 0 3px var(--moss)}
+.emo input:focus-visible+label{outline:3px solid var(--amber);outline-offset:2px}
+.vis{display:grid;gap:6px}
+.vis label{display:flex;gap:10px;align-items:flex-start;border:2px solid var(--ink);background:#fffaf0;padding:9px 12px;cursor:pointer}
+.vis input{margin-top:5px;accent-color:var(--moss)}
+.vis b{font-family:var(--f-display);font-weight:400}
+.vis span{display:block;font-size:12px;color:var(--muted)}
+.chip{display:inline-block;font-size:12px;border:1.5px solid var(--ink);padding:1px 8px;background:var(--ivory-2);white-space:nowrap}
+.chip.moss{background:#dbe9cf}.chip.amber{background:#f6e2b5}.chip.alert{background:#f3cfc2}.chip.gray{background:#e8e2d6;color:var(--muted)}
+.story{font-family:var(--f-story);font-size:17px;line-height:1.85;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}
+.stitle{font-family:var(--f-display);font-size:21px;margin:0;text-wrap:balance}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;gap:12px;align-items:center;border:2px solid var(--ink);background:#fffaf0;padding:8px 12px;text-align:left;width:100%}
+.item:hover{background:var(--ivory-2)}
+.item canvas{width:24px;height:31px;image-rendering:pixelated;flex:none}
+.item .t{flex:1;min-width:0}
+.item .t b{font-family:var(--f-display);font-weight:400;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .t span{font-size:12px;color:var(--muted)}
+.card{border:2px solid var(--ink);background:#fffaf0;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.card .story{font-size:15px;line-height:1.7;max-height:12em;overflow:auto}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:3px solid var(--ink)}
+.tab{font-family:var(--f-display);font-size:15px;background:var(--ivory-2);border:2px solid var(--ink);border-bottom:none;padding:6px 12px}
+.tab[aria-selected=true]{background:var(--wood-light)}
+.lines{display:grid;gap:10px}
+.line{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:baseline}
+.line .num{font-family:var(--f-display);font-size:20px;color:var(--alert);font-variant-numeric:tabular-nums;white-space:nowrap}
+.breath{width:150px;height:150px;margin:6px auto;border:3px solid var(--ink);border-radius:50%;background:radial-gradient(circle,#e3eed6 0 40%,#bcd6a8 70%);display:grid;place-items:center;font-family:var(--f-display);font-size:16px;color:var(--moss-dark);transform:scale(.7)}
+.breath.on{animation:breath 10s ease-in-out infinite}
+@keyframes breath{0%{transform:scale(.7)}40%{transform:scale(1)}50%{transform:scale(1)}100%{transform:scale(.7)}}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;border:2px solid var(--ink);background:#fffaf0;padding:9px 12px}
+.toggle b{font-family:var(--f-display);font-weight:400}
+.toggle button[aria-pressed=true]{background:var(--moss);color:var(--ivory)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:560px){ .grid2{grid-template-columns:1fr} }
+.av{display:flex;gap:10px;flex-wrap:wrap}
+.av label{border:2px solid var(--ink);background:#fffaf0;padding:6px 10px;display:flex;flex-direction:column;align-items:center;cursor:pointer;position:relative}
+.av input{position:absolute;opacity:0}
+.av canvas{width:36px;height:45px;image-rendering:pixelated}
+.av input:checked+canvas{outline:3px solid var(--moss);outline-offset:3px}
+.rules{margin:0;padding-left:1.2em;display:grid;gap:4px}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+@media (prefers-reduced-motion:reduce){ .breath.on{animation:none;transform:scale(.85)} }
+</style>
+
+<div id="app">
+  <header class="bar">
+    <div class="brand"><canvas id="logo" width="20" height="26" aria-hidden="true"></canvas><div><h1>마음의 숲</h1><span>FOREST OF US</span></div></div>
+    <nav aria-label="숲 공간">
+      <button class="nb" data-go="plant" type="button">마음 심기</button>
+      <button class="nb" data-go="mine" type="button">나의 나무</button>
+      <button class="nb" data-go="rest" type="button">고요한 쉼터</button>
+      <button class="nb" data-go="lab" type="button">숲 연구소</button>
+      <button class="nb" data-go="guide" type="button">숲 입구 안내</button>
+      <button class="nb" data-go="admin" type="button" id="adminBtn" hidden>운영실<b id="adminBadge" hidden></b></button>
+    </nav>
+  </header>
+  <main class="stage">
+    <canvas id="world" tabindex="0" aria-label="픽셀 숲 지도. 방향키나 WASD로 걷고, 나무를 눌러 이야기를 읽어요."></canvas>
+    <div class="plaque hud" id="hud" aria-live="polite"><strong>숲을 불러오는 중</strong></div>
+    <div class="plaque keys"><kbd>WASD</kbd> 걷기 · <kbd>SPACE</kbd> 살펴보기 · 클릭하면 그곳으로 걸어가요</div>
+    <button class="help" id="supportBtn" type="button">도움이 필요할 때</button>
+    <div class="plaque toast" id="toast" hidden></div>
+  </main>
+</div>
+<div class="scrim" id="scrim" hidden>
+  <section class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="ptitle">
+    <div class="ph"><h2 id="ptitle"></h2><button class="x" id="pclose" type="button" aria-label="닫기">X</button></div>
+    <div class="pb" id="pbody"></div>
+  </section>
+</div>
+
+<script>
+(() => {
+"use strict";
+/* ===================== constants ===================== */
+const W = 48, H = 34, T = 16;
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const EMO = {
+  tired:   { ko:'지침',  tree:'작은 소나무', desc:'조용하고 단정한 형태' },
+  anxious: { ko:'불안',  tree:'푸른 잎 나무', desc:'부드러운 잎 형태' },
+  lonely:  { ko:'외로움', tree:'버드나무',   desc:'아래로 흐르는 가지' },
+  hope:    { ko:'희망',  tree:'꽃나무',     desc:'작은 꽃이 피어난 형태' },
+};
+const STATUS = {
+  private:{t:'나만 보기',c:'gray'}, pending:{t:'공개 검토 중',c:'amber'}, approved:{t:'숲에 공개됨',c:'moss'},
+  held:{t:'수정 요청',c:'alert'}, kept_private:{t:'비공개로 유지됨',c:'gray'}, hidden:{t:'숲에서 숨겨짐',c:'gray'},
+  delete_requested:{t:'삭제 요청됨',c:'gray'}
+};
+const month = new Date().getMonth() + 1;
+const SEASON = month>=3&&month<=5 ? 'spring' : month>=6&&month<=8 ? 'summer' : month>=9&&month<=11 ? 'autumn' : 'winter';
+const SEASON_KO = {spring:'봄',summer:'여름',autumn:'가을',winter:'겨울'}[SEASON];
+const GRASS = {
+  spring:['#8fcb68','#7dbb5b','#a2d77b','#6aa64f'], summer:['#6fbb54','#5fa948','#82c865','#4f9440'],
+  autumn:['#a9bf5c','#97ad50','#bccc6c','#83993f'], winter:['#cfd9c8','#c0cbb9','#dde5d8','#adb9a8']
+}[SEASON];
+
+/* ===================== tiny helpers ===================== */
+const $ = s => document.querySelector(s);
+function h(tag, props, ...kids){
+  const el = document.createElement(tag);
+  for (const [k,v] of Object.entries(props||{})){
+    if (v === false || v == null) continue;
+    if (k === 'class') el.className = v;
+    else if (k === 'text') el.textContent = v;
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of kids.flat()){ if (c == null || c === false) continue; el.append(c.nodeType ? c : document.createTextNode(String(c))); }
+  return el;
+}
+function rng(seed){ return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+const ls = { get(k,d){ try{ const v = localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch{ return d; } }, set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} } };
+const monthLabel = ms => { const d = new Date(ms||Date.now()); return `${d.getFullYear()}년 ${d.getMonth()+1}월`; };
+const deepMerge = (a,b) => { const o = {...(a||{})}; for (const [k,v] of Object.entries(b)){ o[k] = (v && typeof v==='object' && !Array.isArray(v)) ? deepMerge(o[k], v) : v; } return o; };
+const clone = o => JSON.parse(JSON.stringify(o||{}));
+
+/* ===================== text checks ===================== */
+const CHECKS = {
+  personal: [/01[016789][-\s.]?\d{3,4}[-\s.]?\d{4}/, /[\w.+-]+@[\w-]+\.[\w.]+/, /\d{6}\s?-\s?[1-4]\d{6}/,
+             /(카톡|카카오톡|오픈채팅|텔레그램|인스타)\s?(아이디|id|ID)?\s?[:：]?\s?[A-Za-z0-9_.]{3,}/,
+             /[가-힣A-Za-z]{2,12}(병원|의원|클리닉|산부인과|여성병원)/, /https?:\/\//],
+  crisis:   [/죽고\s*싶/, /자살/, /자해/, /사라지고\s*싶/, /살고\s*싶지\s*않/, /살기\s*싫/, /끝내고\s*싶/, /극단적/, /목숨/],
+  advice:   [/(꼭|무조건)\s*(드세요|드셔|먹어|하세요)/, /효과\s*(있어|봤|최고|짱)/, /(약|한약|영양제|주사).{0,8}(추천|드세요|좋아요)/],
+};
+function checkText(s){ const f = []; for (const [k,arr] of Object.entries(CHECKS)) if (arr.some(r => r.test(s))) f.push(k); return f; }
+const FLAG_KO = { personal:'개인정보 의심', crisis:'위기 표현', advice:'의료 조언 의심' };
+
+/* ===================== pixel sprites ===================== */
+function mk(w,h){ const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+function Grid(w,h){ this.w=w; this.h=h; this.a=new Array(w*h).fill(null); }
+Grid.prototype.set = function(x,y,c){ if (x>=0&&y>=0&&x<this.w&&y<this.h&&c) this.a[y*this.w+x]=c; };
+Grid.prototype.get = function(x,y){ return (x>=0&&y>=0&&x<this.w&&y<this.h) ? this.a[y*this.w+x] : null; };
+Grid.prototype.canvas = function(){ const c = mk(this.w,this.h), g = c.getContext('2d'); for (let y=0;y<this.h;y++) for (let x=0;x<this.w;x++){ const v=this.a[y*this.w+x]; if (v){ g.fillStyle=v; g.fillRect(x,y,1,1);} } return c; };
+function paintShape(G, inside, shade, outline){
+  for (let y=0;y<G.h;y++) for (let x=0;x<G.w;x++){
+    if (!inside(x,y)) continue;
+    const edge = !inside(x-1,y)||!inside(x+1,y)||!inside(x,y-1)||!inside(x,y+1);
+    G.set(x,y, edge ? outline : shade(x,y));
+  }
+}
+function trunk(G, wide, col='#7a4f2c', dark='#55361c', out='#3b2614'){
+  const x0 = wide ? 8 : 9, x1 = wide ? 11 : 10;
+  for (let y=16;y<26;y++){ for (let x=x0;x<=x1;x++) G.set(x,y, x===x1?dark:col); G.set(x0-1,y,out); G.set(x1+1,y,out); }
+  G.set(x0-2,25,out); G.set(x1+2,25,out); G.set(x0-1,25,dark); G.set(x1+1,25,dark);
+}
+function blobInside(circles, maxY=99){ return (x,y) => y<=maxY && circles.some(([cx,cy,r]) => (x-cx)**2+(y-cy)**2 <= r*r); }
+function blobShade(pal, cx, cy, r){ return (x,y) => { const dl = (x-(cx-3))**2+(y-(cy-3))**2; if (dl < (r*.5)**2) return pal.l; if ((x-cx)+(y-cy) > r*.75) return pal.d; return pal.m; }; }
+
+function pineSprite(pal, snow){
+  const G = new Grid(20,26); trunk(G,false);
+  const tiers = [{y0:1,h:7,w:3},{y0:5,h:8,w:5},{y0:10,h:10,w:8}], cx = 10;
+  const tierAt = (x,y) => { let hit=null; for (const t of tiers){ if (y>=t.y0 && y<t.y0+t.h){ const half = 1+Math.floor((y-t.y0)*t.w/(t.h-1)); if (x>=cx-half && x<cx+half) hit={t,half}; } } return hit; };
+  paintShape(G, (x,y)=>!!tierAt(x,y), (x,y)=>{ const {t,half}=tierAt(x,y); const ry=y-t.y0;
+    if (snow && ry<=1) return '#f2f5f7';
+    if (x < cx-1 && x >= cx-half+1 && ry < t.h*.7) return pal.l; if (x > cx+1 || ry >= t.h-2) return pal.d; return pal.m; }, pal.o);
+  return G.canvas();
+}
+function blobSprite(pal){
+  const G = new Grid(20,26); trunk(G,false);
+  const cs = [[10,9,7.4],[5.5,12,4.6],[14.5,12,4.6],[10,13,5.5]];
+  paintShape(G, blobInside(cs,17), blobShade(pal,10,10,7.4), pal.o);
+  // soft leaf tufts
+  for (const [x,y] of [[6,8],[12,5],[14,10],[8,13],[11,15]]) G.set(x,y,pal.l);
+  return G.canvas();
+}
+function willowSprite(pal){
+  const G = new Grid(20,26); trunk(G,false);
+  const cs = [[10,7,6.6],[5,9,4],[15,9,4]];
+  paintShape(G, blobInside(cs,12), blobShade(pal,10,7,6.6), pal.o);
+  for (let x=2;x<=18;x++){
+    if (x%2===0 && x!==10) continue;
+    const len = 5 + ((x*7)%5); const top = 10;
+    for (let y=top; y<top+len && y<24; y++){ if (G.get(x,y)===pal.o && y<12) continue; G.set(x,y, y===top+len-1 ? pal.l : (x%4===1?pal.m:pal.d)); }
+  }
+  return G.canvas();
+}
+function blossomSprite(pal){
+  const G = new Grid(20,26); trunk(G,false);
+  const cs = [[10,9,7],[5,12,4.4],[15,12,4.4],[10,13,5]];
+  const ins = blobInside(cs,17);
+  paintShape(G, ins, blobShade(pal,10,9,7), pal.o);
+  for (let y=0;y<26;y++) for (let x=0;x<20;x++){
+    if (!ins(x,y) || G.get(x,y)===pal.o) continue;
+    const k = (x*13 + y*7) % 11;
+    if (k===0) G.set(x,y,'#f4a6bf'); else if (k===5 && y<14) G.set(x,y,'#fff0f4');
+  }
+  return G.canvas();
+}
+function oakSprite(pal){
+  const G = new Grid(20,26); trunk(G,true,'#6e4626','#4d2f17','#2e1c0d');
+  paintShape(G, blobInside([[10,8,8],[4.5,12,4.8],[15.5,12,4.8],[10,13,6]],18), blobShade(pal,10,8,8), pal.o);
+  return G.canvas();
+}
+function saplingSprite(stage){
+  const G = new Grid(20,26);
+  G.set(8,25,'#5a3a1f'); G.set(9,25,'#6e4626'); G.set(10,25,'#6e4626'); G.set(11,25,'#5a3a1f');
+  if (stage===0){ for (const [x,y] of [[9,24],[10,24]]) G.set(x,y,'#7a4f2c'); }
+  if (stage>=1){ G.set(10,24,'#3f7a45'); G.set(10,23,'#3f7a45'); G.set(9,22,'#57985a'); G.set(11,22,'#57985a'); G.set(8,21,'#7fbf72'); G.set(12,21,'#7fbf72'); }
+  if (stage>=2){ for (let y=18;y<24;y++) G.set(10,y,'#7a4f2c'); paintShape(G, blobInside([[10,16,3.6]]), ()=> '#57985a', '#2f5a36'); }
+  return G.canvas();
+}
+const TREE_PAL = {
+  tired:   {o:'#1f3f2a', d:'#2c5b3c', m:'#3d7a4c', l:'#5f9d62'},
+  anxious: {o:'#1d4547', d:'#2b6764', m:'#3d8880', l:'#69b2a5'},
+  lonely:  {o:'#31492a', d:'#4b7339', m:'#6b9748', l:'#9dc06a'},
+  hope:    {o:'#2d5634', d:'#3d7743', m:'#559659', l:'#80bd72'},
+};
+const SPR = {
+  tired: pineSprite(TREE_PAL.tired), anxious: blobSprite(TREE_PAL.anxious),
+  lonely: willowSprite(TREE_PAL.lonely), hope: blossomSprite(TREE_PAL.hope),
+  sap: [saplingSprite(0), saplingSprite(1), saplingSprite(2)],
+};
+const OAK_PALS = {
+  spring:[{o:'#2c4d27',d:'#3f6e36',m:'#55904a',l:'#7eb565'}],
+  summer:[{o:'#203f1f',d:'#2f5c2c',m:'#3f7a39',l:'#5e9a50'}],
+  autumn:[{o:'#5a2e14',d:'#93451f',m:'#c8672b',l:'#e8a046'},{o:'#5b4313',d:'#9a7425',m:'#cfa233',l:'#ebcb5c'},{o:'#4e2318',d:'#82342a',m:'#ad4b36',l:'#d27a4f'},{o:'#2c4a25',d:'#4c6a2f',m:'#6f8b3a',l:'#9db35a'}],
+  winter:[{o:'#3c3a35',d:'#6c665d',m:'#8c857a',l:'#e9edf0'}],
+}[SEASON];
+const WILD = [
+  ...OAK_PALS.map(oakSprite),
+  pineSprite({o:'#183427',d:'#224a34',m:'#2f6343',l:'#4b8158'}, SEASON==='winter'),
+];
+
+// characters
+const AVATARS = [
+  {hair:'#4a2f1f', shirt:'#5d9170', pants:'#4b4a66'},
+  {hair:'#2b2230', shirt:'#d98c5f', pants:'#5b4636'},
+  {hair:'#8a5a34', shirt:'#6f86b8', pants:'#3e4b3e'},
+  {hair:'#c9a15b', shirt:'#b06a8a', pants:'#4a3f55'},
+];
+const CH = {
+  down:["...hhhh...","..hhhhhh..",".hhhhhhhh.",".hssssssh.",".sesssses.",".sbssssbs.","..ssssss..","..cccccc..",".scccccccs","..cccccc..","..pppppp..","..pp..pp..","..oo..oo.."],
+  up:  ["...hhhh...","..hhhhhh..",".hhhhhhhh.",".hhhhhhhh.",".hhhhhhhh.",".shhhhhhs.","..ssssss..","..cccccc..",".scccccccs","..cccccc..","..pppppp..","..pp..pp..","..oo..oo.."],
+  side:["...hhhh...","..hhhhhhh.","..hhhhhhhh","..hhsssss.","..hssssse.","..hsssssb.","...ssssss.","...ccccc..","...cccccs.","...ccccc..","...ppppp..","...pp.pp..","...oo.oo.."],
+};
+function charSprite(av, rows, frame, flip){
+  const G = new Grid(12,15);
+  const pal = {h:av.hair, s:'#f1c7a0', e:'#2b2118', b:'#e8977d', c:av.shirt, p:av.pants, o:'#3b2a20'};
+  const r = rows.slice();
+  if (frame===1){ r[11] = r[11].replace('pp..pp','.pp.pp.').slice(0,10); r[12] = r[12].replace('oo..oo','.oo.oo.').slice(0,10); }
+  r.forEach((row,y) => [...row].forEach((ch,x) => { if (ch!=='.') G.set((flip?9-x:x)+1, y+1, pal[ch]); }));
+  const out = new Grid(12,15);
+  for (let y=0;y<15;y++) for (let x=0;x<12;x++){
+    const v = G.get(x,y); if (v){ out.set(x,y,v); continue; }
+    if (G.get(x-1,y)||G.get(x+1,y)||G.get(x,y-1)||G.get(x,y+1)) out.set(x,y,'#2b2118');
+  }
+  return out.canvas();
+}
+function buildChar(i){
+  const av = AVATARS[i] || AVATARS[0];
+  const S = {};
+  for (const f of [0,1]){ S['down'+f]=charSprite(av,CH.down,f,false); S['up'+f]=charSprite(av,CH.up,f,false); S['right'+f]=charSprite(av,CH.side,f,false); S['left'+f]=charSprite(av,CH.side,f,true); }
+  return S;
+}
+
+/* ===================== world generation ===================== */
+const ground = new Uint8Array(W*H); // 0 grass 1 path 2 water 3 soil
+const block = new Uint8Array(W*H);
+const idx = (x,y) => y*W+x;
+const inb = (x,y) => x>=0&&y>=0&&x<W&&y<H;
+const PATHS = [
+  [[24,33],[24,26],[23,21],[23,17]],
+  [[23,17],[18,18],[13,16],[11,13]],
+  [[23,17],[29,18],[35,15],[38,11],[38,10]],
+  [[23,17],[21,13],[25,9],[23,5],[24,2]],
+  [[21,24],[24,24]],
+];
+for (const pl of PATHS) for (let i=0;i<pl.length-1;i++){
+  const [ax,ay]=pl[i],[bx,by]=pl[i+1], n = Math.ceil(Math.hypot(bx-ax,by-ay)*4);
+  for (let s=0;s<=n;s++){ const x=Math.round(ax+(bx-ax)*s/n), y=Math.round(ay+(by-ay)*s/n);
+    for (const [dx,dy] of [[0,0],[1,0],[0,1],[1,1]]) if (inb(x+dx,y+dy)) ground[idx(x+dx,y+dy)]=1; }
+}
+// pond
+const POND = {cx:7.5, cy:9.5, rx:3.6, ry:2.7};
+for (let y=0;y<H;y++) for (let x=0;x<W;x++){ if (((x+.5-POND.cx)/POND.rx)**2+((y+.5-POND.cy)/POND.ry)**2<=1){ ground[idx(x,y)]=2; block[idx(x,y)]=1; } }
+// planting patch
+const PATCH = {x0:14,y0:21,x1:22,y1:28};
+const fences = [];
+for (let y=PATCH.y0;y<=PATCH.y1;y++) for (let x=PATCH.x0;x<=PATCH.x1;x++){
+  const edge = x===PATCH.x0||x===PATCH.x1||y===PATCH.y0||y===PATCH.y1;
+  if (edge){ if (ground[idx(x,y)]===1) continue; fences.push([x,y]); block[idx(x,y)]=1; }
+  else ground[idx(x,y)]=3;
+}
+const PATCH_SLOTS = []; for (const y of [24,26,22]) for (const x of [15,17,19,21]) PATCH_SLOTS.push([x,y]);
+for (const [x,y] of [[16,23],[18,23],[20,23],[16,25],[18,25],[20,25],[16,27],[18,27],[20,27]]) PATCH_SLOTS.push([x,y]);
+// cabin
+const CABIN = {x0:37,y0:6,x1:41,y1:9, door:[39,10]};
+for (let y=CABIN.y0;y<=CABIN.y1;y++) for (let x=CABIN.x0;x<=CABIN.x1;x++) block[idx(x,y)]=1;
+
+const isPath = (x,y) => inb(x,y) && ground[idx(x,y)]===1;
+const nearPath = (x,y) => { for (let dy=-1;dy<=1;dy++) for (let dx=-1;dx<=1;dx++) if (isPath(x+dx,y+dy)) return true; return false; };
+const inRect = (x,y,[a,b,c,d]) => x>=a&&x<=c&&y>=b&&y<=d;
+const ZONES_OFF = [[13,20,23,29],[2,4,13,14],[35,4,43,11],[20,29,28,33]];
+function freeNear(x0,y0){
+  for (let r=0;r<6;r++) for (let dy=-r;dy<=r;dy++) for (let dx=-r;dx<=r;dx++){
+    const x=x0+dx,y=y0+dy; if (!inb(x,y)) continue;
+    if (ground[idx(x,y)]===0 && !block[idx(x,y)]) return [x,y];
+  }
+  return [x0,y0];
+}
+// props
+const SIGNS = [
+  {label:'마음 심는 터', go:'plant', at:freeNear(23,22)},
+  {label:'이야기 숲길', go:'path', at:freeNear(26,15)},
+  {label:'고요한 쉼터', go:'rest', at:freeNear(13,12)},
+  {label:'숲 연구소', go:'lab', at:freeNear(36,12)},
+];
+SIGNS.forEach(s => block[idx(...s.at)] = 1);
+const BENCH = freeNear(11,12); block[idx(...BENCH)] = 1;
+const LANTERN = freeNear(12,9); block[idx(...LANTERN)] = 1;
+const ARCH = [[22,31],[27,31]]; ARCH.forEach(a=>block[idx(...a)]=1);
+
+// story slots & stages
+const stageOf = (x,y) => (x>=13&&x<=35&&y>=12&&y<=21) ? 1 : (x>=13&&x<=35&&y>=3&&y<=11) ? 2 : 3;
+const STAGE_FOG = {2:[[13,3,35,11]], 3:[[2,15,12,31],[36,12,45,31],[26,22,35,31]]};
+const STAGE_NAME = {1:'1단계 · 작은 숲',2:'2단계 · 이야기 숲',3:'3단계 · 함께하는 숲'};
+let SLOTS = [];
+for (let y=3;y<=30;y+=2) for (let x=3 + ((y/2)%2); x<=44; x+=3){
+  if (!inb(x,y) || ground[idx(x,y)]!==0 || block[idx(x,y)] || nearPath(x,y)) continue;
+  if (ZONES_OFF.some(z=>inRect(x,y,z))) continue;
+  if (SIGNS.some(s=>Math.abs(s.at[0]-x)<=1&&Math.abs(s.at[1]-y)<=1)) continue;
+  SLOTS.push({x,y,stage:stageOf(x,y)});
+}
+SLOTS.sort((a,b)=> a.stage-b.stage || (Math.hypot(a.x-24,a.y-17) - Math.hypot(b.x-24,b.y-17)));
+const STAGE_CAP = {1:SLOTS.filter(s=>s.stage===1).length};
+STAGE_CAP[2] = STAGE_CAP[1] + SLOTS.filter(s=>s.stage===2).length;
+const slotSet = new Set(SLOTS.map(s=>idx(s.x,s.y)));
+// wild trees
+const R = rng(20261015);
+const wild = [];
+for (let y=0;y<H;y++) for (let x=0;x<W;x++){
+  const border = x<2||x>W-3||y<2||y>H-3;
+  const gate = x>=22&&x<=27&&y>=29;
+  let place = false;
+  if (border && !gate && !isPath(x,y)) place = (x+y)%2===0 || R()<.5;
+  else if (!border && ground[idx(x,y)]===0 && !block[idx(x,y)] && !nearPath(x,y) && !slotSet.has(idx(x,y))){
+    let nearSlot=false; for (const s of SLOTS) if (Math.abs(s.x-x)<=1&&Math.abs(s.y-y)<=1){ nearSlot=true; break; }
+    if (!nearSlot && !ZONES_OFF.slice(0,1).some(z=>inRect(x,y,z)) && !inRect(x,y,[20,28,29,33]) && !inRect(x,y,[34,4,44,12])){
+      const p = inRect(x,y,[2,4,13,14]) ? .1 : .14; place = R() < p;
+    }
+  }
+  if (place){ wild.push({x,y,spr:WILD[Math.floor(R()*WILD.length)]}); block[idx(x,y)]=1; }
+}
+const waterTiles = []; for (let y=0;y<H;y++) for (let x=0;x<W;x++) if (ground[idx(x,y)]===2) waterTiles.push([x,y]);
+
+/* ground canvas */
+const groundCv = mk(W*T,H*T);
+(() => {
+  const g = groundCv.getContext('2d'), r = rng(7);
+  const PATHC = SEASON==='winter' ? ['#d9ccb4','#c6b69b','#e6dbc6','#b8a78a'] : ['#cfa86c','#b9925a','#dfbd85','#a8834f'];
+  for (let ty=0;ty<H;ty++) for (let tx=0;tx<W;tx++){
+    const X=tx*T, Y=ty*T, gt = ground[idx(tx,ty)];
+    if (gt===0 || gt===2){
+      g.fillStyle=GRASS[0]; g.fillRect(X,Y,T,T);
+      for (let i=0;i<10;i++){ g.fillStyle=GRASS[1+Math.floor(r()*3)]; g.fillRect(X+Math.floor(r()*T),Y+Math.floor(r()*T),1,1); }
+      if (r()<.35){ const x=X+2+Math.floor(r()*12), y=Y+3+Math.floor(r()*10); g.fillStyle=GRASS[3]; g.fillRect(x,y,1,2); g.fillRect(x+2,y-1,1,3); g.fillStyle=GRASS[2]; g.fillRect(x+1,y,1,2); }
+      const deco = r();
+      if (deco<.07){ const fl = {spring:['#f6b7cf','#fff3f6'],summer:['#f4d35e','#ffffff'],autumn:['#e3893a','#c9592e'],winter:['#ffffff','#f1f4f7']}[SEASON];
+        const x=X+3+Math.floor(r()*10), y=Y+3+Math.floor(r()*10); g.fillStyle=fl[0]; g.fillRect(x,y,2,1); g.fillRect(x,y+1,1,1); g.fillStyle=fl[1]; g.fillRect(x+1,y+1,1,1); }
+    }
+    if (gt===1){
+      g.fillStyle=PATHC[0]; g.fillRect(X,Y,T,T);
+      for (let i=0;i<9;i++){ g.fillStyle=PATHC[1+Math.floor(r()*3)]; g.fillRect(X+Math.floor(r()*T),Y+Math.floor(r()*T),1+(r()<.3),1); }
+      g.fillStyle=PATHC[3];
+      if (!isPath(tx-1,ty)) g.fillRect(X,Y,1,T); if (!isPath(tx+1,ty)) g.fillRect(X+T-1,Y,1,T);
+      if (!isPath(tx,ty-1)) g.fillRect(X,Y,T,1); if (!isPath(tx,ty+1)) g.fillRect(X,Y+T-1,T,1);
+    }
+    if (gt===3){
+      g.fillStyle='#8a5a35'; g.fillRect(X,Y,T,T);
+      for (let yy=0;yy<T;yy+=4){ g.fillStyle='#6f4528'; g.fillRect(X,Y+yy+3,T,1); g.fillStyle='#a06d42'; g.fillRect(X,Y+yy,T,1); }
+      for (let i=0;i<4;i++){ g.fillStyle='#5e3a21'; g.fillRect(X+Math.floor(r()*T),Y+Math.floor(r()*T),1,1); }
+    }
+  }
+  // water drawn over grass
+  for (const [tx,ty] of waterTiles){
+    const X=tx*T, Y=ty*T;
+    g.fillStyle='#5b9fc6'; g.fillRect(X,Y,T,T);
+    const land = (x,y) => !inb(x,y) || ground[idx(x,y)]!==2;
+    g.fillStyle='#e3d19c';
+    if (land(tx-1,ty)) g.fillRect(X,Y,2,T); if (land(tx+1,ty)) g.fillRect(X+T-2,Y,2,T);
+    if (land(tx,ty-1)) g.fillRect(X,Y,T,2); if (land(tx,ty+1)) g.fillRect(X,Y+T-2,T,2);
+    g.fillStyle='#427fa7';
+    if (land(tx,ty-1)) g.fillRect(X+(land(tx-1,ty)?2:0),Y+2,T-(land(tx-1,ty)?2:0)-(land(tx+1,ty)?2:0),2);
+  }
+  // lily pads
+  for (const [x,y] of [[6,9],[9,10],[5,10]]){ g.fillStyle='#4f8b47'; g.fillRect(x*T+4,y*T+6,6,4); g.fillStyle='#6fae5d'; g.fillRect(x*T+5,y*T+6,3,2); }
+})();
+
+/* static prop sprites */
+function cabinSprite(){
+  const w=5*T, hgt=4*T+12, c=mk(w,hgt), g=c.getContext('2d');
+  const ink='#2b2118';
+  // walls
+  g.fillStyle=ink; g.fillRect(4,30,w-8,hgt-30);
+  g.fillStyle='#b98552'; g.fillRect(6,32,w-12,hgt-34);
+  g.fillStyle='#94643a'; for (let y=36;y<hgt-2;y+=5) g.fillRect(6,y,w-12,1);
+  // roof
+  for (let y=0;y<36;y++){ const half = Math.min(w/2, 8 + y*1.25); g.fillStyle = y%5===4 ? '#7a3c30' : (y<2?ink:'#9b5140'); g.fillRect(w/2-half, y+2, half*2, 1); g.fillStyle=ink; g.fillRect(w/2-half-1,y+2,1,1); g.fillRect(w/2+half,y+2,1,1); }
+  g.fillStyle=ink; g.fillRect(0,37,w,2);
+  g.fillStyle='#b8644f'; for (let y=4;y<34;y+=5) g.fillRect(w/2-4,y,8,1);
+  // door
+  g.fillStyle=ink; g.fillRect(w/2-8,hgt-26,16,26); g.fillStyle='#6b4526'; g.fillRect(w/2-6,hgt-24,12,24);
+  g.fillStyle='#4f321b'; g.fillRect(w/2-6,hgt-16,12,1); g.fillStyle='#e6c066'; g.fillRect(w/2+3,hgt-13,2,2);
+  // windows
+  for (const x of [12, w-28]){ g.fillStyle=ink; g.fillRect(x,46,16,14); g.fillStyle='#f6e3a6'; g.fillRect(x+2,48,12,10); g.fillStyle='#d8bb72'; g.fillRect(x+7,48,2,10); g.fillRect(x+2,52,12,2); }
+  // chimney + planter
+  g.fillStyle=ink; g.fillRect(w-24,0,10,16); g.fillStyle='#8c6a58'; g.fillRect(w-22,2,6,13);
+  g.fillStyle='#4f7d47'; g.fillRect(12,62,16,4); g.fillStyle='#e3893a'; g.fillRect(14,61,2,2); g.fillRect(20,61,2,2);
+  return c;
+}
+const CABIN_SPR = cabinSprite();
+function signSprite(){ const G=new Grid(16,18), o='#2b2118';
+  for (let y=8;y<18;y++){ G.set(7,y,'#6b4526'); G.set(8,y,'#55361c'); G.set(6,y,o); G.set(9,y,o); }
+  for (let y=1;y<9;y++) for (let x=1;x<15;x++) G.set(x,y,(x===1||x===14||y===1||y===8)?o:(y===4?'#a8774a':'#c79260'));
+  return G.canvas(); }
+const SIGN_SPR = signSprite();
+function benchSprite(){ const G=new Grid(18,14), o='#2b2118';
+  for (let x=1;x<17;x++){ G.set(x,3,o); G.set(x,4,'#b98552'); G.set(x,5,'#94643a'); G.set(x,6,o); G.set(x,8,o); G.set(x,9,'#c79260'); G.set(x,10,o); }
+  for (const x of [2,15]) for (let y=10;y<14;y++){ G.set(x,y,'#55361c'); }
+  return G.canvas(); }
+const BENCH_SPR = benchSprite();
+function lanternSprite(){ const G=new Grid(10,24), o='#2b2118';
+  for (let y=8;y<24;y++){ G.set(4,y,'#3c3a35'); G.set(5,y,'#55524b'); }
+  for (let y=1;y<9;y++) for (let x=1;x<9;x++) G.set(x,y,(x===1||x===8||y===1||y===8)?o:'#f6d77e');
+  G.set(4,0,o); G.set(5,0,o); return G.canvas(); }
+const LANTERN_SPR = lanternSprite();
+function fenceSprite(hasL,hasR){ const G=new Grid(16,16), o='#2b2118';
+  for (let y=3;y<15;y++){ G.set(7,y,'#a8774a'); G.set(8,y,'#8a5e37'); G.set(6,y,o); G.set(9,y,o); } G.set(7,2,o); G.set(8,2,o);
+  for (const yy of [6,10]){ const a = hasL?0:7, b = hasR?16:9; for (let x=a;x<b;x++){ if (x>=6&&x<=9) continue; G.set(x,yy-1,o); G.set(x,yy,'#c79260'); G.set(x,yy+1,o); } }
+  return G.canvas(); }
+const isFence = (x,y) => fences.some(f=>f[0]===x&&f[1]===y);
+function archSprite(){ const w=6*T, c=mk(w,40), g=c.getContext('2d'), o='#2b2118';
+  for (const x of [6,w-10]){ g.fillStyle=o; g.fillRect(x,6,8,34); g.fillStyle='#8a5e37'; g.fillRect(x+2,8,4,32); }
+  g.fillStyle=o; g.fillRect(0,4,w,10); g.fillStyle='#c79260'; g.fillRect(2,6,w-4,6); g.fillStyle='#9a6a3f'; g.fillRect(2,10,w-4,2);
+  g.fillStyle='#57985a'; for (let x=4;x<w-4;x+=7){ g.fillRect(x,13,3,2); g.fillRect(x+1,15,1,2); }
+  g.fillStyle='#f4a6bf'; for (let x=8;x<w-6;x+=14) g.fillRect(x,14,2,2);
+  return c; }
+const ARCH_SPR = archSprite();
+
+/* ===================== app state ===================== */
+const state = {
+  mode:'loading', uid:null, admin:false, canWrite:true,
+  forest:[], mine:[], myQueue:null, queueAll:[],
+  avatar: ls.get('forest.avatar', 0),
+};
+let CHAR = buildChar(state.avatar);
+
+/* ===================== store adapter ===================== */
+const S = (() => {
+  let db = null, local = null; const subs = {forest:[],mine:[],myQueue:[],queueAll:[],hearts:[]};
+  const LKEY = 'forest.demo.v1';
+  const saveLocal = () => { ls.set(LKEY, local); emitLocal(); };
+  function emitLocal(){
+    subs.forest.forEach(f=>f(Object.entries(local.forest).map(([id,d])=>({id,...d}))));
+    subs.mine.forEach(f=>f(Object.entries(local.mine).map(([id,d])=>({id,...d}))));
+    subs.myQueue.forEach(f=>f(local.queue.local||null));
+    subs.queueAll.forEach(f=>f(Object.entries(local.queue).map(([uid,d])=>({uid,...d}))));
+    subs.hearts.forEach(({tid,f})=>f(Object.entries(local.hearts).filter(([,d])=>d.treeId===tid).map(([id,d])=>({id,...d}))));
+  }
+  const safe = s => String(s).replace(/[^A-Za-z0-9_\-.~:@+]/g,'_');
+  const docs = s => s.docs.map(d=>({id:d.id, ...d.data()}));
+  return {
+    useRemote(d){ db = d; },
+    useLocal(){ local = ls.get(LKEY, null) || {forest:{},mine:{},queue:{},hearts:{}}; },
+    get remote(){ return !!db; },
+    heartId(tid){ return safe(tid) + '~' + safe(state.uid); },
+    subForest(f){ if (db) return db.collection('forest').onSnapshot(s=>f(docs(s)), onSubErr); subs.forest.push(f); emitLocal(); },
+    subMine(f){ if (db) return db.collection('data/users/'+state.uid).onSnapshot(s=>f(docs(s)), onSubErr); subs.mine.push(f); emitLocal(); },
+    subMyQueue(f){ if (db) return db.doc('queue/'+state.uid).onSnapshot(s=>f(s.exists?s.data():null), onSubErr); subs.myQueue.push(f); emitLocal(); },
+    subQueueAll(f){ if (db) return db.collection('queue').onSnapshot(s=>f(s.docs.map(d=>({uid:d.id,...d.data()}))), onSubErr); subs.queueAll.push(f); emitLocal(); },
+    subHearts(tid,f){
+      if (db) return db.collection('hearts').where('treeId','==',tid).onSnapshot(s=>f(docs(s)), ()=>{});
+      const e={tid,f}; subs.hearts.push(e); emitLocal(); return ()=>{ subs.hearts.splice(subs.hearts.indexOf(e),1); };
+    },
+    async setMine(id,d){ if (db) return db.collection('data/users/'+state.uid).doc(id).set(d); local.mine[id]=d; saveLocal(); },
+    async delMine(id){ if (db) return db.collection('data/users/'+state.uid).doc(id).delete(); delete local.mine[id]; saveLocal(); },
+    async myQueueMerge(p){ if (db){ const ref=db.doc('queue/'+state.uid); return state.myQueue ? ref.update(p) : ref.set(p); } local.queue.local = deepMerge(local.queue.local, p); saveLocal(); },
+    async myQueueReplace(d){ if (db) return db.doc('queue/'+state.uid).set(d); local.queue.local = d; saveLocal(); },
+    async adminQueueMerge(uid,p){ if (db) return db.doc('queue/'+uid).update(p); local.queue[uid] = deepMerge(local.queue[uid], p); saveLocal(); },
+    async setForest(id,d){ if (db) return db.collection('forest').doc(id).set(d); local.forest[id]=d; saveLocal(); },
+    async delForest(id){ if (db) return db.collection('forest').doc(id).delete(); delete local.forest[id]; saveLocal(); },
+    async setHeart(tid,kind){
+      const hid = this.heartId(tid);
+      if (db){ const ref = db.collection('hearts').doc(hid); return kind ? ref.set({treeId:tid,kind}) : ref.delete(); }
+      if (kind) local.hearts[hid] = {treeId:tid,kind}; else delete local.hearts[hid]; saveLocal();
+    },
+  };
+})();
+function onSubErr(e){ if (e && e.code==='revoked'){ toast('이 숲에 대한 접근이 바뀌었어요. 새로고침해 주세요.'); } }
+function writeErr(e){
+  console.warn(e);
+  if (e && e.code==='invalid_argument'){ state.canWrite=false; toast('이 숲에 기록할 권한이 없어요. 공유해 준 분께 참여 권한을 요청해 주세요.', 5000); }
+  else if (e && e.code==='quota_exceeded') toast('숲의 저장 공간이 가득 찼어요. 운영자에게 알려 주세요.', 5000);
+  else toast('저장하지 못했어요. 잠시 후 다시 시도해 주세요.');
+}
+
+/* ===================== derived data ===================== */
+function myTrees(){
+  const arr = [];
+  for (const d of state.mine) arr.push({...d, id:d.id, kind:'private', status:'private'});
+  for (const [id,it] of Object.entries(state.myQueue?.items || {})){
+    if (it.state==='deleted') continue;
+    arr.push({...it, id, kind:'queue', status:it.state, createdAt:it.submittedAt});
+  }
+  return arr.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+}
+function patchTrees(){ return myTrees().filter(t=>t.status!=='approved'&&t.status!=='delete_requested'); }
+function myIdSet(){ return new Set(myTrees().map(t=>t.id)); }
+function visibleForest(){
+  const dr = new Set(myTrees().filter(t=>t.status==='delete_requested').map(t=>t.id));
+  return state.forest.filter(t=>!dr.has(t.id));
+}
+function stageCount(){ const n = state.forest.length; return n >= STAGE_CAP[2] ? 3 : n >= STAGE_CAP[1] ? 2 : 1; }
+function stageOpen(st){
+  if (st===1) return true;
+  const n = state.forest.length;
+  if (state.forest.some(t=>stageOf(t.x,t.y)>=st)) return true;
+  return st===2 ? n>=STAGE_CAP[1] : n>=STAGE_CAP[2];
+}
+
+/* ===================== entities & blocking ===================== */
+let entities = [], dynBlock = new Uint8Array(W*H);
+function rebuild(){
+  dynBlock = new Uint8Array(W*H);
+  entities = [];
+  for (const w of wild) entities.push({kind:'wild', x:w.x*T+8, y:w.y*T+14, spr:w.spr});
+  for (const [x,y] of fences) entities.push({kind:'fence', x:x*T+8, y:y*T+13, spr:fenceSprite(isFence(x-1,y),isFence(x+1,y))});
+  entities.push({kind:'cabin', x:(CABIN.x0+2.5)*T, y:(CABIN.y1+1)*T-1, spr:CABIN_SPR, use:'lab', ux:CABIN.door[0]*T+8, uy:CABIN.door[1]*T+6, hit:[CABIN.x0*T,(CABIN.y0-1)*T,(CABIN.x1+1)*T,(CABIN.y1+1)*T]});
+  for (const s of SIGNS) entities.push({kind:'sign', x:s.at[0]*T+8, y:s.at[1]*T+14, spr:SIGN_SPR, use:s.go, label:s.label});
+  entities.push({kind:'bench', x:BENCH[0]*T+8, y:BENCH[1]*T+12, spr:BENCH_SPR, use:'rest'});
+  entities.push({kind:'lantern', x:LANTERN[0]*T+8, y:LANTERN[1]*T+15, spr:LANTERN_SPR});
+  entities.push({kind:'arch', x:24.5*T+8, y:31*T+15, spr:ARCH_SPR, label:'숲 입구', use:'guide', ux:25*T, uy:31*T+8, hit:[22*T,29*T,28*T,32*T]});
+  const mineIds = myIdSet();
+  for (const t of visibleForest()){
+    if (!EMO[t.emotion]) continue;
+    entities.push({kind:'story', x:t.x*T+8, y:t.y*T+14, spr:SPR[t.emotion], tree:t, mine:mineIds.has(t.id), use:'read'});
+    dynBlock[idx(t.x,t.y)] = 1;
+  }
+  patchTrees().forEach((t,i) => {
+    const [x,y] = PATCH_SLOTS[i % PATCH_SLOTS.length];
+    t.px = x; t.py = y;
+    entities.push({kind:'mytree', x:x*T+8, y:y*T+14, spr:SPR[t.emotion]||SPR.tired, tree:t, mine:true, use:'read'});
+    dynBlock[idx(x,y)] = 1;
+  });
+  updateHud();
+}
+const isBlocked = (tx,ty) => !inb(tx,ty) || block[idx(tx,ty)] || dynBlock[idx(tx,ty)];
+
+/* ===================== player & movement ===================== */
+const player = { x:24.5*T+8, y:29*T+10, dir:'up', moving:false, frame:0, ft:0, path:null, onArrive:null };
+const keys = new Set();
+function blockedPx(px,py){ return isBlocked(Math.floor(px/T), Math.floor(py/T)); }
+function hitAt(px,py){ return blockedPx(px-4,py-2)||blockedPx(px+4,py-2)||blockedPx(px-4,py+3)||blockedPx(px+4,py+3); }
+function tryMove(dx,dy){
+  const stuck = hitAt(player.x,player.y);
+  if (dx && (stuck || !hitAt(player.x+dx,player.y))) player.x += dx;
+  if (dy && (stuck || !hitAt(player.x,player.y+dy))) player.y += dy;
+  player.x = Math.max(8, Math.min(W*T-8, player.x)); player.y = Math.max(8, Math.min(H*T-4, player.y));
+}
+function bfs(goals){
+  const sx = Math.floor(player.x/T), sy = Math.floor(player.y/T);
+  const goal = new Set(goals.filter(([x,y])=>inb(x,y)&&!isBlocked(x,y)).map(([x,y])=>idx(x,y)));
+  if (!goal.size) return null;
+  const prev = new Int32Array(W*H).fill(-2); prev[idx(sx,sy)] = -1;
+  const q = [idx(sx,sy)];
+  while (q.length){
+    const c = q.shift();
+    if (goal.has(c)){ const p=[]; let k=c; while (k!==-1){ p.unshift([k%W, Math.floor(k/W)]); k=prev[k]; } return p; }
+    const cx=c%W, cy=Math.floor(c/W);
+    for (const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const nx=cx+dx, ny=cy+dy; if (!inb(nx,ny)||isBlocked(nx,ny)) continue; const n=idx(nx,ny); if (prev[n]!==-2) continue; prev[n]=c; q.push(n); }
+  }
+  return null;
+}
+function walkTo(goals, onArrive){
+  const p = bfs(goals);
+  if (!p){ if (onArrive) onArrive(); return; }
+  player.path = p.slice(1); player.onArrive = onArrive || null;
+  if (!player.path.length){ const f=player.onArrive; player.onArrive=null; player.path=null; f && f(); }
+}
+const around = (tx,ty) => [[tx,ty+1],[tx-1,ty],[tx+1,ty],[tx,ty-1],[tx-1,ty+1],[tx+1,ty+1]];
+
+/* ===================== camera & render ===================== */
+const cv = $('#world'), ctx = cv.getContext('2d');
+let DPR=1, SC=3, VW=0, VH=0;
+const cam = {x:player.x, y:player.y, focus:null};
+function resize(){
+  const r = cv.getBoundingClientRect();
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.max(1, Math.round(r.width*DPR)); cv.height = Math.max(1, Math.round(r.height*DPR));
+  const base = r.width < 640 ? 2 : r.width > 1500 ? 4 : 3;
+  SC = base * DPR; VW = cv.width / SC; VH = cv.height / SC;
+}
+addEventListener('resize', resize);
+const plantAnim = { id:null, x:0, y:0, emo:'tired', t0:0 };
+const particles = [];
+function initParticles(){
+  particles.length = 0; if (REDUCED || SEASON==='summer') return;
+  const n = SEASON==='winter' ? 40 : 18;
+  for (let i=0;i<n;i++) particles.push({x:Math.random(), y:Math.random(), s:.3+Math.random()*.7, p:Math.random()*6.28});
+}
+initParticles();
+
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(.05, (now-last)/1000); last = now;
+  update(dt, now); draw(now);
+  requestAnimationFrame(frame);
+}
+function update(dt, now){
+  if (panelOpen()) { player.moving=false; return; }
+  let dx=0, dy=0;
+  if (keys.has('ArrowLeft')||keys.has('a')) dx-=1;
+  if (keys.has('ArrowRight')||keys.has('d')) dx+=1;
+  if (keys.has('ArrowUp')||keys.has('w')) dy-=1;
+  if (keys.has('ArrowDown')||keys.has('s')) dy+=1;
+  const sp = 72*dt;
+  if (dx||dy){ player.path=null; player.onArrive=null; const l=Math.hypot(dx,dy); tryMove(dx/l*sp, dy/l*sp); player.dir = Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up'); player.moving=true; cam.focus=null; }
+  else if (player.path && player.path.length){
+    const [tx,ty] = player.path[0], gx = tx*T+8, gy = ty*T+10;
+    const ddx = gx-player.x, ddy = gy-player.y, d = Math.hypot(ddx,ddy);
+    if (d <= sp){ player.x=gx; player.y=gy; player.path.shift(); if (!player.path.length){ player.path=null; const f=player.onArrive; player.onArrive=null; f && f(); } }
+    else { player.x += ddx/d*sp; player.y += ddy/d*sp; }
+    player.dir = Math.abs(ddx)>Math.abs(ddy)?(ddx>0?'right':'left'):(ddy>0?'down':'up'); player.moving=true; cam.focus=null;
+  } else player.moving=false;
+  if (player.moving){ player.ft += dt; if (player.ft>.16){ player.ft=0; player.frame^=1; } } else player.frame=0;
+  const tgt = cam.focus || player;
+  const k = REDUCED ? 1 : 1-Math.pow(.0015, dt);
+  cam.x += (tgt.x-cam.x)*k; cam.y += (tgt.y-cam.y-8)*k;
+}
+function camOrigin(){
+  const ww=W*T, wh=H*T;
+  let ox = ww<=VW ? (ww-VW)/2 : Math.max(0, Math.min(ww-VW, cam.x-VW/2));
+  let oy = wh<=VH ? (wh-VH)/2 : Math.max(0, Math.min(wh-VH, cam.y-VH/2));
+  return [Math.round(ox*SC)/SC, Math.round(oy*SC)/SC];
+}
+function nearestUse(){
+  let best=null, bd=26;
+  for (const e of entities){ if (!e.use) continue; const ux=e.ux??e.x, uy=e.uy??e.y; const d=Math.hypot(ux-player.x, uy-(player.y+2)); if (d<bd){ bd=d; best=e; } }
+  return best;
+}
+function draw(now){
+  const t = now/1000;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle = '#20361f'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.imageSmoothingEnabled = false;
+  const [ox,oy] = camOrigin();
+  ctx.setTransform(SC,0,0,SC,-ox*SC,-oy*SC);
+  ctx.drawImage(groundCv, 0, 0);
+  // water shimmer
+  ctx.fillStyle = 'rgba(200,232,246,.7)';
+  for (const [x,y] of waterTiles){ const p = REDUCED?0:Math.floor((t*6 + x*5 + y*3) % 14); if ((x+y)%2) ctx.fillRect(x*T+1+p%12, y*T+5+((x*7)%6), 3, 1); }
+  // entities
+  const ents = entities.slice();
+  ents.push({kind:'player', x:player.x, y:player.y});
+  ents.sort((a,b)=>a.y-b.y);
+  const L = ox-40, R2 = ox+VW+40, Tt = oy-40, B = oy+VH+90;
+  const near = nearestUse();
+  for (const e of ents){
+    if (e.x<L||e.x>R2||e.y<Tt||e.y>B) continue;
+    if (e.kind==='player'){ drawPlayer(); continue; }
+    if ((e.kind==='mytree'||e.kind==='story') && plantAnim.id && e.tree.id===plantAnim.id) continue;
+    if (e.kind==='story'||e.kind==='mytree'||e.kind==='wild'){
+      ctx.fillStyle = 'rgba(25,40,18,.28)'; ctx.beginPath(); ctx.ellipse(e.x, e.y+1, 8, 3, 0, 0, 6.29); ctx.fill();
+      if (e.kind!=='wild'){ ctx.fillStyle = e===near ? 'rgba(255,246,200,.75)' : 'rgba(255,246,210,.38)'; ctx.fillRect(e.x-6,e.y+2,12,1); ctx.fillRect(e.x-4,e.y+3,8,1); }
+    }
+    const spr = e.spr;
+    if (e.kind==='story'||e.kind==='mytree'||e.kind==='wild'){
+      const sway = (REDUCED||e.kind==='wild') ? 0 : Math.round(Math.sin(t*1.2 + e.x*.13)*.4);
+      ctx.drawImage(spr, Math.round(e.x-10+sway), Math.round(e.y-24));
+    } else if (e.kind==='fence') ctx.drawImage(spr, e.x-8, e.y-13);
+    else if (e.kind==='cabin') ctx.drawImage(spr, Math.round(e.x-spr.width/2), e.y-spr.height+1);
+    else if (e.kind==='sign') ctx.drawImage(spr, e.x-8, e.y-17);
+    else if (e.kind==='bench') ctx.drawImage(spr, e.x-9, e.y-12);
+    else if (e.kind==='lantern'){ ctx.drawImage(spr, e.x-5, e.y-23); const a=.12+.06*Math.sin(t*2); ctx.fillStyle=`rgba(255,220,130,${REDUCED?.14:a})`; ctx.beginPath(); ctx.arc(e.x, e.y-18, 14, 0, 6.29); ctx.fill(); }
+    else if (e.kind==='arch') ctx.drawImage(spr, 22*T-6, e.y-38);
+    if (e.mine){ // ivory ribbon marks my trees
+      const st = e.tree.status;
+      ctx.fillStyle='#2b2118'; ctx.fillRect(e.x+6,e.y-6,1,7);
+      ctx.fillStyle = st==='pending'?'#e6b24c': st==='held'?'#d97a5f': '#fbf3df';
+      ctx.fillRect(e.x+7,e.y-6,4,3); ctx.fillStyle='#2b2118'; ctx.fillRect(e.x+7,e.y-3,4,1);
+    }
+  }
+  // planting animation
+  if (plantAnim.id) drawPlant(now);
+  // fog over locked stages
+  for (const st of [2,3]){
+    if (stageOpen(st)) continue;
+    for (const [a,b,c,d] of STAGE_FOG[st]){
+      const X=a*T, Y=b*T, Wd=(c-a+1)*T, Hd=(d-b+1)*T;
+      ctx.fillStyle='rgba(236,240,232,.42)'; ctx.fillRect(X,Y,Wd,Hd);
+      ctx.fillStyle='rgba(236,240,232,.25)'; ctx.fillRect(X+4,Y+4,Wd-8,Hd-8);
+    }
+  }
+  // screen-space overlay
+  ctx.setTransform(1,0,0,1,0,0);
+  const fs = Math.round(5.2*SC/ (SC>4?1.15:1));
+  ctx.font = `${fs}px Jua, "Gowun Dodum", sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+  const toScr = (x,y)=>[(x-ox)*SC, (y-oy)*SC];
+  for (const e of entities){ if (!e.label) continue; const [sx,sy]=toScr(e.x, e.kind==='arch'? e.y-44 : e.y-24); if (sx<-80||sx>cv.width+80||sy<-30||sy>cv.height+30) continue; tag(sx,sy,e.label,fs,'#fbf3df','#6b4526'); }
+  for (const st of [2,3]){
+    if (stageOpen(st)) continue; const [a,b,c,d] = STAGE_FOG[st][0];
+    const need = (st===2?STAGE_CAP[1]:STAGE_CAP[2]) - state.forest.length;
+    const [sx,sy] = toScr((a+c+1)/2*T, (b+d+1)/2*T);
+    if (sx>-200&&sx<cv.width+200&&sy>-40&&sy<cv.height+40) tag(sx,sy,`공개 나무가 ${Math.max(1,need)}그루 더 모이면 열리는 숲`, Math.round(fs*.85), '#fbf3df','#4f7d47');
+  }
+  if (near && !panelOpen()){
+    const [sx,sy] = toScr(near.x, (near.kind==='cabin'? near.y-near.spr.height : near.kind==='arch'? near.y-58 : near.y-34));
+    const verb = near.use==='read' ? (near.mine ? '나의 나무 보기' : '이야기 읽기') : near.use==='plant' ? '마음 심기' : near.use==='rest' ? '쉼터에서 쉬기' : near.use==='lab' ? '연구소 들어가기' : near.use==='guide' ? '숲 안내 보기' : '살펴보기';
+    tag(sx, sy, (matchMedia('(pointer:coarse)').matches ? '탭 · ' : 'SPACE · ') + verb, Math.round(fs*.9), '#2b2118', '#fbf3df');
+  }
+  // seasonal particles
+  if (particles.length){
+    for (const p of particles){
+      p.y += .0006*p.s*(SEASON==='winter'?1.4:1); p.x += Math.sin(t*.8+p.p)*.0004;
+      if (p.y>1.02){ p.y=-.02; p.x=Math.random(); }
+      const x = p.x*cv.width, y = p.y*cv.height, s = Math.max(2, Math.round(SC*.9));
+      ctx.fillStyle = SEASON==='winter' ? 'rgba(255,255,255,.9)' : SEASON==='spring' ? '#f6b7cf' : ['#e3893a','#cfa233','#c9592e'][Math.floor(p.p)%3];
+      ctx.fillRect(Math.round(x), Math.round(y), s, s); if (SEASON==='autumn') ctx.fillRect(Math.round(x)+s, Math.round(y)+s, s, s);
+    }
+  }
+}
+function tag(x,y,text,fs,fg,bg){
+  const w = ctx.measureText(text).width + fs*1.1, hgt = fs*1.6, b = Math.max(2, Math.round(fs/7));
+  ctx.fillStyle='#2b2118'; ctx.fillRect(Math.round(x-w/2-b), Math.round(y-hgt/2-b), Math.round(w+b*2), Math.round(hgt+b*2));
+  ctx.fillStyle=bg; ctx.fillRect(Math.round(x-w/2), Math.round(y-hgt/2), Math.round(w), Math.round(hgt));
+  ctx.fillStyle=fg; ctx.fillText(text, x, y+1);
+}
+function drawPlayer(){
+  ctx.fillStyle='rgba(25,40,18,.3)'; ctx.beginPath(); ctx.ellipse(player.x, player.y+1, 5, 2, 0, 0, 6.29); ctx.fill();
+  const spr = CHAR[player.dir + (REDUCED?0:player.frame)];
+  ctx.drawImage(spr, Math.round(player.x-6), Math.round(player.y-14));
+}
+function drawPlant(now){
+  const e = (now - plantAnim.t0)/1000, x = plantAnim.x, y = plantAnim.y;
+  if (e < .5){ const yy = y - 34*(1-e/.5); ctx.fillStyle='#2b2118'; ctx.fillRect(x-2,yy-3,4,4); ctx.fillStyle='#c9902f'; ctx.fillRect(x-1,yy-2,2,2); }
+  else if (e < .85){ ctx.drawImage(SPR.sap[0], x-10, y-24); const k=(e-.5)/.35; ctx.fillStyle=`rgba(160,120,80,${1-k})`; for (let i=0;i<6;i++){ const a=i/6*6.28; ctx.fillRect(x+Math.cos(a)*k*9, y-2+Math.sin(a)*k*4, 2, 2);} }
+  else if (e < 1.2) ctx.drawImage(SPR.sap[1], x-10, y-24);
+  else if (e < 1.55) ctx.drawImage(SPR.sap[2], x-10, y-24);
+  else if (e < 2.3){
+    const k = Math.min(1,(e-1.55)/.35), s = k<1 ? .55+.55*k : 1 + .06*Math.sin((e-1.9)*14)*Math.max(0,1-(e-1.9)/.4);
+    const spr = SPR[plantAnim.emo]; const w=20*s, hh=26*s;
+    ctx.drawImage(spr, Math.round(x-w/2), Math.round(y+2-hh), Math.round(w), Math.round(hh));
+    ctx.fillStyle='#fbf3df'; for (let i=0;i<8;i++){ const a=i/8*6.28 + e; const r=10+ (e-1.55)*14; ctx.fillRect(Math.round(x+Math.cos(a)*r), Math.round(y-12+Math.sin(a)*r*.7), 2, 2); }
+  } else { plantAnim.id = null; }
+}
+
+/* ===================== input on canvas ===================== */
+addEventListener('keydown', e => {
+  if (panelOpen()){ if (e.key==='Escape') closePanel(); return; }
+  if (e.target.closest && e.target.closest('input,textarea,button,nav')) { if (e.target!==cv) return; }
+  const k = e.key.length===1 ? e.key.toLowerCase() : e.key;
+  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','w','a','s','d'].includes(k)){ keys.add(k); e.preventDefault(); }
+  if (k===' '||k==='Enter'||k==='e'){ const n = nearestUse(); if (n){ e.preventDefault(); useEntity(n); } }
+});
+addEventListener('keyup', e => { const k = e.key.length===1 ? e.key.toLowerCase() : e.key; keys.delete(k); });
+addEventListener('blur', () => keys.clear());
+cv.addEventListener('pointerdown', e => {
+  if (panelOpen()) return;
+  cv.focus({preventScroll:true});
+  const r = cv.getBoundingClientRect(); const [ox,oy] = camOrigin();
+  const wx = ox + (e.clientX-r.left)*DPR/SC, wy = oy + (e.clientY-r.top)*DPR/SC;
+  // hit test from front to back
+  const cands = entities.filter(en=>en.use).sort((a,b)=>b.y-a.y);
+  for (const en of cands){
+    const box = en.hit || (en.kind==='sign' ? [en.x-8,en.y-17,en.x+8,en.y+2] : en.kind==='bench' ? [en.x-9,en.y-12,en.x+9,en.y+2] : [en.x-9,en.y-24,en.x+9,en.y+2]);
+    if (wx>=box[0]&&wx<=box[2]&&wy>=box[1]&&wy<=box[3]){
+      const tx = Math.floor((en.ux??en.x)/T), ty = Math.floor((en.uy??en.y)/T);
+      const goals = (en.ux!=null) ? [[tx,ty],...around(tx,ty)] : around(tx,ty);
+      walkTo(goals, () => { player.dir = player.y > (en.uy??en.y) ? 'up' : 'down'; useEntity(en); });
+      return;
+    }
+  }
+  const tx = Math.floor(wx/T), ty = Math.floor(wy/T);
+  if (!inb(tx,ty)) return;
+  walkTo(isBlocked(tx,ty) ? around(tx,ty) : [[tx,ty]]);
+});
+function useEntity(en){
+  if (en.use==='read') openRead(en.tree, en.kind==='mytree' || en.mine);
+  else if (en.use==='path') toast('공개된 나무 앞에 서면 익명의 이야기를 읽을 수 있어요.');
+  else go(en.use);
+}
+
+/* ===================== HUD / toast ===================== */
+function updateHud(){
+  const hud = $('#hud'); hud.textContent='';
+  if (state.mode==='loading'){ hud.append(h('strong',{text:'숲을 불러오는 중'})); return; }
+  const n = state.forest.length, mine = myTrees().filter(t=>t.status!=='delete_requested').length;
+  hud.append(
+    h('strong',{}, '숲의 나무 ', h('span',{class:'num',text:String(n)}), '그루'),
+    h('div',{class:'sub',text:`${STAGE_NAME[stageCount()]} · ${SEASON_KO}의 숲 · 나의 나무 ${mine}그루`}),
+    state.mode==='local' ? h('div',{class:'sub',text:'미리보기 모드 · 기록은 이 브라우저에만 저장돼요'}) : null,
+    state.mode==='remote' && !state.canWrite ? h('div',{class:'sub',text:'읽기 전용으로 둘러보는 중이에요'}) : null,
+  );
+  const ab = $('#adminBtn'), bd = $('#adminBadge');
+  ab.hidden = !state.admin;
+  if (state.admin){ const a = adminData(); const c = a.pending.length + a.reports.length + a.deletes.length; bd.hidden = !c; bd.textContent = String(c); }
+}
+let toastT;
+function toast(msg, ms=3200){ const el=$('#toast'); el.textContent=msg; el.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>el.hidden=true, ms); }
+
+/* ===================== panels ===================== */
+let current = null, lastFocus = null;
+const panelOpen = () => !$('#scrim').hidden;
+function openPanel(key, title, body, opts={}){
+  current = {key, ...opts};
+  $('#ptitle').textContent = title;
+  const pb = $('#pbody'); pb.textContent=''; pb.append(...[].concat(body)); pb.scrollTop = 0;
+  $('#panel').classList.toggle('wide', !!opts.wide);
+  if (!panelOpen()) lastFocus = document.activeElement;
+  $('#scrim').hidden = false; keys.clear();
+  setTimeout(()=>{ const f = opts.focus ? $(opts.focus) : $('#pclose'); f && f.focus({preventScroll:true}); }, 30);
+}
+function closePanel(){
+  if (current && current.onClose) current.onClose();
+  current = null; $('#scrim').hidden = true;
+  (lastFocus && lastFocus.focus) ? lastFocus.focus({preventScroll:true}) : cv.focus({preventScroll:true});
+}
+$('#pclose').addEventListener('click', closePanel);
+$('#scrim').addEventListener('pointerdown', e => { if (e.target.id==='scrim') closePanel(); });
+function refreshPanel(){
+  if (!current || !current.refresh) return;
+  const a = document.activeElement;
+  if (a && a.closest('#panel') && a.matches('input[type=text],textarea')) return;
+  current.refresh();
+}
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
+$('#supportBtn').addEventListener('click', () => openSupport());
+function go(where){
+  if (where==='plant') openWrite();
+  else if (where==='mine') openMine();
+  else if (where==='rest') openRest();
+  else if (where==='lab') openLab();
+  else if (where==='guide') openGuide();
+  else if (where==='admin') openAdmin();
+}
+function miniTree(emo, cls){ const c = mk(20,26); c.getContext('2d').drawImage(SPR[emo]||SPR.tired,0,0); if (cls) c.className=cls; c.setAttribute('aria-hidden','true'); return c; }
+function chip(status){ const s = STATUS[status] || STATUS.private; return h('span',{class:'chip '+s.c, text:s.t}); }
+
+/* --- guide (숲 입구) --- */
+function openGuide(first){
+  const av = h('div',{class:'av', role:'radiogroup', 'aria-label':'걷는 모습 고르기'});
+  AVATARS.forEach((_,i) => {
+    const c = mk(12,15); c.getContext('2d').drawImage(buildChar(i).down0,0,0);
+    const inp = h('input',{type:'radio',name:'av',id:'av'+i,value:String(i)}); if (i===state.avatar) inp.checked=true;
+    inp.addEventListener('change',()=>{ state.avatar=i; ls.set('forest.avatar',i); CHAR=buildChar(i); });
+    av.append(h('label',{for:'av'+i}, inp, c));
+  });
+  openPanel('guide', '숲 입구', [
+    h('p',{class:'lead',text:'이곳에서는 말하지 못한 마음을 나무로 남길 수 있습니다.'}),
+    h('p',{text:'난임 과정에서 쉽게 꺼내지 못한 감정을 적으면, 그 이야기가 이 숲의 나무 한 그루가 돼요. 비슷한 시간을 지나는 사람들의 나무 사이를 천천히 걸으며 이야기를 읽을 수도 있어요.'}),
+    h('div',{class:'grid2'},
+      h('div',{class:'box'}, h('h3',{text:'이렇게 이용해요'}), h('ol',{class:'rules'},
+        h('li',{text:'마음 심는 터에서 오늘의 마음을 적어요.'}),
+        h('li',{text:'기본은 나만 보기예요. 원할 때만 익명 공개를 신청해요.'}),
+        h('li',{text:'공개 신청한 글은 운영자가 확인한 뒤 이야기 숲길에 심어져요.'}),
+        h('li',{text:'다른 나무에는 조용히 마음을 보낼 수 있어요. 댓글과 순위는 없어요.'}))),
+      h('div',{class:'box'}, h('h3',{text:'함께 지키는 약속'}), h('ul',{class:'rules'},
+        h('li',{text:'실명, 병원명, 연락처, 시술 이력처럼 나를 알아볼 수 있는 정보는 적지 않아요.'}),
+        h('li',{text:'다른 사람의 경험을 평가하거나 비난하지 않아요.'}),
+        h('li',{text:'검증되지 않은 의료 조언은 남기지 않아요.'}),
+        h('li',{text:'불편한 글은 신고 버튼으로 알려 주세요.'})))),
+    h('div',{class:'box soft'}, h('h3',{text:'익명성에 대해 솔직하게 알려드려요'}),
+      h('p',{class:'muted',text:'다른 이용자에게는 이름이나 계정 정보가 보이지 않아요. 다만 이 숲은 Claude 계정으로 들어오는 공간이라, 시스템은 누가 심은 나무인지 구분하는 식별값을 처리해요. 공개를 신청한 글은 운영자가 내용을 읽고 검토해요. 나만 보기 나무는 운영자도 볼 수 없어요. 내 나무는 언제든 나의 나무에서 지울 수 있어요.'})),
+    h('div',{}, h('label',{class:'fl',text:'걷는 모습 고르기'}), av),
+    h('div',{class:'row end'}, h('button',{class:'btn',type:'button',onclick:()=>{ ls.set('forest.welcomed',true); closePanel(); }, text: first ? '숲에 들어가기' : '숲으로 돌아가기'})),
+  ]);
+}
+
+/* --- write / plant --- */
+function openWrite(edit){
+  if (state.mode==='remote' && (!state.uid || !state.canWrite)){
+    openPanel('plant','마음 심는 터',[h('p',{text:'지금은 이 숲을 둘러보기만 할 수 있어요. 나무를 심으려면 이 페이지를 공유해 준 분께 참여 권한(Contributor 이상)을 요청해 주세요.'}), h('div',{class:'row end'}, h('button',{class:'btn ghost',type:'button',onclick:closePanel,text:'닫기'}))]);
+    return;
+  }
+  const draft = edit ? {emo:edit.emotion, title:edit.title||'', body:edit.body||'', vis: edit.kind==='queue'?'public':'private'} : ls.get('forest.draft', {emo:'tired', title:'', body:'', vis:'private'});
+  const emos = h('div',{class:'emos',role:'radiogroup','aria-label':'오늘의 마음'});
+  for (const [k,v] of Object.entries(EMO)){
+    const inp = h('input',{type:'radio',name:'emo',id:'emo-'+k,value:k}); if (draft.emo===k) inp.checked=true;
+    emos.append(h('div',{class:'emo'}, inp, h('label',{for:'emo-'+k}, miniTree(k), h('b',{text:v.ko}), h('small',{text:v.tree}))));
+  }
+  const title = h('input',{type:'text',id:'f-title',maxlength:'40',placeholder:'제목 (선택)',value:draft.title});
+  const body = h('textarea',{id:'f-body',maxlength:'1200',rows:'7',placeholder:'마음속 이야기를 적어주세요'}); body.value = draft.body;
+  const count = h('div',{class:'count'});
+  const warn = h('div',{class:'box amber',hidden:true});
+  const vis = h('div',{class:'vis',role:'radiogroup','aria-label':'공개 범위'},
+    h('label',{for:'v-private'}, h('input',{type:'radio',name:'vis',id:'v-private',value:'private',checked:draft.vis!=='public'}), h('div',{}, h('b',{text:'나만 보기 (기본값)'}), h('span',{text:'마음 심는 터에 나만 볼 수 있는 나무로 남아요.'}))),
+    h('label',{for:'v-public'}, h('input',{type:'radio',name:'vis',id:'v-public',value:'public',checked:draft.vis==='public'}), h('div',{}, h('b',{text:'다른 이용자에게 익명 공개'}), h('span',{text:'운영자가 개인정보와 유해 표현을 확인한 뒤 이야기 숲길에 심어져요. 검토 전에는 공개되지 않아요.'}))));
+  const submit = h('button',{class:'btn',type:'submit',text: edit ? '고친 내용 저장' : '나무 심기'});
+  const sync = () => {
+    count.textContent = `${body.value.length} / 1200`;
+    const f = checkText(title.value+' '+body.value);
+    warn.textContent=''; warn.hidden = !f.includes('personal') && !f.includes('advice');
+    if (f.includes('personal')) warn.append(h('p',{text:'연락처, 병원 이름, 링크처럼 나를 알아볼 수 있는 정보가 들어 있는 것 같아요. 공개를 원한다면 지우거나 바꿔 적는 것을 권해요.'}));
+    if (f.includes('advice')) warn.append(h('p',{text:'치료나 약에 대한 권유로 읽힐 수 있는 문장이 있어요. 공개 글에서는 검증되지 않은 의료 조언을 피하고 있어요.'}));
+    submit.disabled = !body.value.trim();
+    if (!edit) ls.set('forest.draft', {emo: (emos.querySelector('input:checked')||{}).value||'tired', title:title.value, body:body.value, vis:(vis.querySelector('input:checked')||{}).value||'private'});
+  };
+  [title,body].forEach(el=>el.addEventListener('input',sync)); emos.addEventListener('change',sync); vis.addEventListener('change',sync);
+  const form = h('form',{class:'pb',style:'padding:0;gap:16px'},
+    h('div',{}, h('label',{class:'fl',text:'오늘의 마음'}), emos, h('p',{class:'muted',style:'margin-top:6px',text:'어떤 마음을 고르든 나무의 크기와 가치는 같아요.'})),
+    h('div',{}, h('label',{class:'fl',for:'f-title',text:'제목'}), title),
+    h('div',{}, h('label',{class:'fl',for:'f-body',text:'마음속 이야기'}), body, count),
+    warn,
+    h('div',{}, h('label',{class:'fl',text:'공개 범위'}), vis),
+    h('div',{class:'row end'}, h('button',{class:'btn ghost',type:'button',onclick:closePanel,text:'나중에 쓰기'}), submit));
+  form.addEventListener('submit', async e => {
+    e.preventDefault(); if (submit.disabled) return;
+    submit.disabled = true;
+    const data = { emotion:(emos.querySelector('input:checked')||{}).value||'tired', title:title.value.trim(), body:body.value.trim(), vis:(vis.querySelector('input:checked')||{}).value||'private' };
+    try { await saveTree(data, edit); } catch(err){ writeErr(err); submit.disabled=false; }
+  });
+  openPanel('plant', edit ? '나무 다시 가꾸기' : '마음 심는 터', [form]);
+  sync();
+}
+async function saveTree(d, edit){
+  const flags = checkText(d.title+' '+d.body);
+  const id = edit ? edit.id : newId();
+  const createdAt = edit ? (edit.createdAt||Date.now()) : Date.now();
+  const before = patchTrees().length;
+  if (d.vis==='private'){
+    await S.setMine(id, {emotion:d.emotion, title:d.title, body:d.body, createdAt});
+    if (edit && edit.kind==='queue') await removeQueueItem(id);
+  } else {
+    await S.myQueueMerge({items:{[id]:{emotion:d.emotion, title:d.title, body:d.body, submittedAt:createdAt, state:'pending', flags, note:null}}});
+    if (edit && edit.kind==='private') await S.delMine(id);
+  }
+  closePanel();
+  if (edit){ toast(d.vis==='public' ? '고친 내용으로 다시 공개 검토를 신청했어요.' : '고친 내용을 저장했어요.'); return; }
+  ls.set('forest.draft', {emo:'tired',title:'',body:'',vis:'private'});
+  const [sx,sy] = PATCH_SLOTS[before % PATCH_SLOTS.length];
+  Object.assign(plantAnim, {id, x:sx*T+8, y:sy*T+14, emo:d.emotion, t0:performance.now() + 450});
+  cam.focus = {x:sx*T+8, y:sy*T+6};
+  setTimeout(() => {
+    if (flags.includes('crisis')) openSupport(true);
+    else openPanel('planted','나무가 심어졌어요',[
+      h('p',{class:'lead',text:'당신의 이야기가 작은 나무로 남았습니다.'}),
+      d.vis==='public' ? h('p',{text:'공개를 신청한 나무는 운영자가 확인한 뒤 이야기 숲길로 옮겨 심어져요. 그전까지는 마음 심는 터에서 나만 볼 수 있어요.'}) : h('p',{text:'이 나무는 마음 심는 터에서 나만 볼 수 있어요. 나의 나무에서 언제든 다시 읽거나 지울 수 있어요.'}),
+      h('p',{class:'muted',text:'숲과 마음의 관계가 궁금하다면, 산림복지 연구 이야기도 살펴보세요.'}),
+      h('div',{class:'row end'}, h('button',{class:'btn ghost',type:'button',onclick:()=>go('lab'),text:'숲 연구소 둘러보기'}), h('button',{class:'btn',type:'button',onclick:closePanel,text:'숲으로 돌아가기'}))]);
+  }, REDUCED ? 600 : 2900);
+}
+async function removeQueueItem(id){ const q = clone(state.myQueue); if (q.items) delete q.items[id]; await S.myQueueReplace(q); }
+
+/* --- read a tree --- */
+function openRead(tree, mine){
+  let unsub = null, myHeart = null, paintHearts = () => {};
+  const render = () => {
+    const t = mine ? (myTrees().find(x=>x.id===tree.id) || tree) : (state.forest.find(x=>x.id===tree.id) || tree);
+    const emo = EMO[t.emotion] || EMO.tired;
+    const head = h('div',{class:'row',style:'gap:12px;align-items:center'}, miniTree(t.emotion,'') , h('div',{style:'flex:1;min-width:0'},
+      h('div',{class:'row',style:'gap:6px'}, h('span',{class:'chip',text:emo.ko+' · '+emo.tree}), mine ? chip(t.status) : null),
+      h('p',{class:'muted',style:'margin-top:4px',text: `${monthLabel(t.createdAt || t.approvedAt)}에 심은 나무`})));
+    head.firstChild.style.cssText='width:40px;height:52px;image-rendering:pixelated;flex:none';
+    const out = [head];
+    if (t.title) out.push(h('h3',{class:'stitle',text:t.title}));
+    out.push(h('div',{class:'story',text:t.body||''}));
+    if (mine){
+      if (t.status==='held' && t.note) out.push(h('div',{class:'box amber'}, h('h3',{text:'운영자의 수정 요청'}), h('p',{text:t.note})));
+      if (t.status==='kept_private') out.push(h('p',{class:'muted',text:'운영 기준에 따라 공개되지 않고 나만 보는 나무로 남았어요.' + (t.note? ' 메모: '+t.note : '')}));
+      if (t.status==='hidden') out.push(h('p',{class:'muted',text:'신고 검토 후 숲에서 숨겨졌어요. 글은 나에게만 남아 있어요.'}));
+      if (t.status==='approved'){ const c = h('p',{class:'muted',id:'heartCount',text:'다른 사람들의 마음을 불러오는 중이에요.'}); out.push(c); }
+      const actions = h('div',{class:'row end'});
+      if (['private','pending','held','kept_private'].includes(t.status)) actions.append(h('button',{class:'btn ghost small',type:'button',onclick:()=>openWrite(t),text:'고쳐 쓰기'}));
+      const conf = h('div',{class:'confirm',hidden:true},
+        h('span',{text: t.status==='approved' ? '숲에서 이 나무를 지울까요? 운영자 확인 후 사라져요.' : '이 나무와 글을 지울까요? 되돌릴 수 없어요.'}),
+        h('button',{class:'btn warn small',type:'button',onclick:()=>deleteMine(t),text:'지우기'}),
+        h('button',{class:'btn ghost small',type:'button',onclick:()=>{conf.hidden=true;delBtn.hidden=false;},text:'그대로 두기'}));
+      const delBtn = h('button',{class:'btn ghost small',type:'button',onclick:()=>{conf.hidden=false;delBtn.hidden=true;},text:'나무 지우기'});
+      actions.append(delBtn); out.push(actions, conf);
+      if (t.status==='approved' && !unsub) unsub = S.subHearts(t.id, hs => { const el = $('#heartCount'); if (el){ const n=hs.length; el.textContent = n ? `${n}명이 이 이야기에 마음을 보냈어요. 이 숫자는 나에게만 보여요.` : '아직 보낸 마음이 없어요. 이 숫자는 나에게만 보여요.'; } });
+    } else {
+      const box = h('div',{class:'row'});
+      const mark = (kind) => async () => { if (!canAct()) return; try { await S.setHeart(t.id, myHeart===kind ? null : kind); myHeart = myHeart===kind ? null : kind; paintHearts(); } catch(e){ writeErr(e); } };
+      const b1 = h('button',{class:'btn ghost',type:'button','aria-pressed':'false',onclick:mark('send'),text:'마음을 보냅니다'});
+      const b2 = h('button',{class:'btn ghost',type:'button','aria-pressed':'false',onclick:mark('read'),text:'이야기를 읽었어요'});
+      paintHearts = () => { for (const [b,k] of [[b1,'send'],[b2,'read']]){ const on = myHeart===k; b.setAttribute('aria-pressed',String(on)); b.className = on ? 'btn' : 'btn ghost'; } };
+      box.append(b1,b2); paintHearts();
+      out.push(box, h('p',{class:'muted',text:'보낸 마음의 수는 다른 사람에게 공개되지 않아요.'}));
+      if (!unsub && state.uid) unsub = S.subHearts(t.id, hs => { const mineH = hs.find(x=>x.id===S.heartId(t.id)); myHeart = mineH ? mineH.kind : null; paintHearts(); });
+      const reasons = ['개인정보가 드러나요','비방이나 공격적인 표현','검증되지 않은 의료 조언','기타'];
+      const rep = h('div',{class:'box soft',hidden:true}, h('p',{text:'어떤 점이 불편했나요? 운영자에게만 전달돼요.'}),
+        h('div',{class:'row'}, ...reasons.map(r=>h('button',{class:'btn ghost small',type:'button',onclick:async()=>{ if(!canAct())return; try{ await S.myQueueMerge({reports:{[t.id]:{reason:r, at:Date.now(), state:'open'}}}); rep.hidden=true; toast('신고가 접수됐어요. 운영자가 확인할게요.'); }catch(e){ writeErr(e);} },text:r}))));
+      out.push(h('div',{class:'row',style:'justify-content:space-between'}, h('span'), h('button',{class:'link',type:'button',onclick:()=>{rep.hidden=!rep.hidden;},text:'신고하기'})), rep);
+    }
+    return out;
+  };
+  openPanel('read', mine ? '나의 나무' : '익명의 이야기', render(), {
+    onClose(){ unsub && unsub(); },
+    refresh(){ const pb=$('#pbody'); const st=pb.scrollTop; pb.textContent=''; pb.append(...render()); pb.scrollTop=st; },
+  });
+}
+function canAct(){ if (state.mode==='remote' && (!state.uid || !state.canWrite)){ toast('지금은 둘러보기만 할 수 있어요.'); return false; } return true; }
+async function deleteMine(t){
+  try {
+    if (t.kind==='private') await S.delMine(t.id);
+    else if (t.status==='approved') await S.myQueueMerge({items:{[t.id]:{state:'delete_requested', requestedAt:Date.now()}}});
+    else await removeQueueItem(t.id);
+    closePanel(); toast(t.status==='approved' ? '삭제를 요청했어요. 나에게는 바로 보이지 않아요.' : '나무를 지웠어요.');
+  } catch(e){ writeErr(e); }
+}
+
+/* --- my trees --- */
+function openMine(){
+  const render = () => {
+    const list = myTrees().filter(t=>t.status!=='delete_requested').reverse();
+    if (!list.length) return [h('p',{text:'아직 심은 나무가 없어요. 마음 심는 터에서 첫 나무를 심어 보세요.'}), h('div',{class:'row end'}, h('button',{class:'btn',type:'button',onclick:()=>openWrite(),text:'마음 심기'}))];
+    return [h('p',{class:'muted',text:'나무를 누르면 숲에서 그 자리로 이동해요. 이 목록은 나에게만 보여요.'}),
+      h('div',{class:'list'}, ...list.map(t => h('button',{class:'item',type:'button',onclick:()=>focusTree(t)},
+        miniTree(t.emotion), h('div',{class:'t'}, h('b',{text:t.title || (t.body||'').split('\n')[0].slice(0,40) || '제목 없는 나무'}), h('span',{text:`${EMO[t.emotion]?.ko||''} · ${monthLabel(t.createdAt)}`})), chip(t.status)))),
+      h('div',{class:'row end'}, h('button',{class:'btn',type:'button',onclick:()=>openWrite(),text:'새 나무 심기'}))];
+  };
+  openPanel('mine','나의 나무', render(), {refresh(){ const pb=$('#pbody'); pb.textContent=''; pb.append(...render()); }});
+}
+function focusTree(t){
+  closePanel();
+  let x,y;
+  if (t.status==='approved'){ const f = state.forest.find(z=>z.id===t.id); if (f){ x=f.x; y=f.y; } }
+  else { const i = patchTrees().findIndex(z=>z.id===t.id); if (i>=0){ [x,y] = PATCH_SLOTS[i % PATCH_SLOTS.length]; } }
+  if (x==null) { openRead(t,true); return; }
+  walkTo(around(x,y), () => openRead(t,true));
+}
+
+/* --- rest --- */
+const audio = { ctx:null, nodes:{}, on:{wind:false,birds:false,leaves:false} };
+function ensureAudio(){
+  if (audio.ctx) return audio.ctx;
+  const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
+  const c = new AC(); audio.ctx = c;
+  const buf = c.createBuffer(1, c.sampleRate*2, c.sampleRate), d = buf.getChannelData(0);
+  let b=0; for (let i=0;i<d.length;i++){ b = (b + .02*(Math.random()*2-1)) / 1.02; d[i] = b*3.5; }
+  audio.noise = buf; return c;
+}
+function startSound(kind){
+  const c = ensureAudio(); if (!c) return; c.resume && c.resume();
+  if (kind==='wind'){
+    const src = c.createBufferSource(); src.buffer=audio.noise; src.loop=true;
+    const f = c.createBiquadFilter(); f.type='lowpass'; f.frequency.value=500;
+    const g = c.createGain(); g.gain.value=.0;
+    const lfo = c.createOscillator(), lg = c.createGain(); lfo.frequency.value=.09; lg.gain.value=.12; lfo.connect(lg).connect(g.gain);
+    src.connect(f).connect(g).connect(c.destination); g.gain.setValueAtTime(.18,c.currentTime); src.start(); lfo.start();
+    audio.nodes.wind = () => { src.stop(); lfo.stop(); };
+  } else if (kind==='leaves'){
+    const id = setInterval(() => {
+      const src = c.createBufferSource(); src.buffer=audio.noise; const f=c.createBiquadFilter(); f.type='highpass'; f.frequency.value=2500+Math.random()*2000;
+      const g=c.createGain(); const t0=c.currentTime; g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(.05,t0+.3); g.gain.linearRampToValueAtTime(0,t0+1.4);
+      src.connect(f).connect(g).connect(c.destination); src.start(t0, Math.random()); src.stop(t0+1.5);
+    }, 1300);
+    audio.nodes.leaves = () => clearInterval(id);
+  } else if (kind==='birds'){
+    const chirp = () => {
+      const t0 = c.currentTime, n = 2+Math.floor(Math.random()*3), base = 2600+Math.random()*1400;
+      for (let i=0;i<n;i++){ const o=c.createOscillator(), g=c.createGain(); const s=t0+i*.13; o.type='sine';
+        o.frequency.setValueAtTime(base,s); o.frequency.exponentialRampToValueAtTime(base*1.35,s+.07);
+        g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(.05,s+.015); g.gain.exponentialRampToValueAtTime(.0005,s+.1);
+        o.connect(g).connect(c.destination); o.start(s); o.stop(s+.12); }
+    };
+    chirp(); const id = setInterval(()=>{ if (Math.random()<.55) chirp(); }, 2400);
+    audio.nodes.birds = () => clearInterval(id);
+  }
+}
+function toggleSound(kind, btn){
+  audio.on[kind] = !audio.on[kind];
+  if (audio.on[kind]) startSound(kind); else { audio.nodes[kind] && audio.nodes[kind](); delete audio.nodes[kind]; }
+  btn.setAttribute('aria-pressed', String(audio.on[kind])); btn.textContent = audio.on[kind] ? '끄기' : '켜기';
+}
+function openRest(){
+  const row = (kind, name, desc) => { const b = h('button',{class:'btn ghost small',type:'button','aria-pressed':String(audio.on[kind]),text: audio.on[kind]?'끄기':'켜기'}); b.addEventListener('click',()=>toggleSound(kind,b)); return h('div',{class:'toggle'}, h('div',{}, h('b',{text:name}), h('div',{class:'muted',text:desc})), b); };
+  const circle = h('div',{class:'breath',text:'숨 고르기'});
+  let bt = null;
+  const bBtn = h('button',{class:'btn ghost',type:'button',text:'천천히 숨 고르기 시작'});
+  bBtn.addEventListener('click', () => {
+    if (circle.classList.toggle('on')){
+      bBtn.textContent='멈추기';
+      const words=['들이쉬고','잠시 머물고','내쉬어요'], seq=[4000,1000,5000]; let k=0;
+      const step=()=>{ circle.textContent=words[k%3]; bt=setTimeout(step, seq[k%3]); k++; };
+      clearTimeout(bt); step();
+    }
+    else { bBtn.textContent='천천히 숨 고르기 시작'; clearTimeout(bt); circle.textContent='숨 고르기'; }
+  });
+  openPanel('rest','고요한 쉼터',[
+    h('p',{text:'글을 쓰지 않아도 괜찮아요. 연못가 벤치에 잠시 앉아 숲의 소리를 들어 보세요.'}),
+    h('div',{class:'lines'}, row('wind','바람 소리','낮게 흐르는 바람'), row('leaves','나뭇잎 소리','가끔 스치는 잎사귀'), row('birds','새소리','멀리서 들리는 새')),
+    circle, h('div',{class:'row',style:'justify-content:center'}, bBtn),
+    h('p',{class:'muted',text:'소리는 창을 닫아도 계속 들려요. 끄려면 이곳에서 다시 꺼 주세요.'}),
+  ], {onClose(){ clearTimeout(bt); }});
+}
+
+/* --- lab --- */
+function openLab(){
+  const ext = (href, text) => h('a',{href, target:'_blank', rel:'noopener', text});
+  openPanel('lab','숲 연구소',[
+    h('p',{text:'숲과 마음에 대한 연구와 공식 지원 정보를 모아 둔 곳이에요. 필요할 때만 천천히 둘러보세요.'}),
+    h('div',{class:'grid2'},
+      h('div',{class:'box'}, h('h3',{text:'산림복지 효과검증 연구'}), h('p',{text:'숲 체험과 산림치유 프로그램이 참여자의 스트레스와 정서에 어떤 변화를 주는지 측정하고 분석하는 연구예요. 연구 목적, 대상, 측정 지표는 운영기관의 공식 자료로 확인할 수 있어요.'}), h('p',{}, ext('https://www.fowi.or.kr','한국산림복지진흥원 바로가기'))),
+      h('div',{class:'box'}, h('h3',{text:'난임과 마음'}), h('p',{text:'난임 과정에서는 불확실성과 반복되는 시술로 스트레스, 우울, 불안을 겪을 수 있다고 알려져 있어요. 전문 상담이 필요하다면 중앙·권역 난임·우울증상담센터에서 도움을 받을 수 있어요.'})),
+      h('div',{class:'box'}, h('h3',{text:'산림치유 프로그램'}), h('p',{text:'국립산림치유원과 지역의 치유의 숲에서 산림치유 프로그램을 운영해요. 프로그램 일정과 예약은 운영기관의 공식 채널에서 확인해 주세요.'})),
+      h('div',{class:'box'}, h('h3',{text:'상담이 필요할 때'}), h('div',{class:'lines'},
+        h('div',{class:'line'}, h('span',{class:'num',text:'109'}), h('span',{text:'자살예방 상담전화 · 24시간'})),
+        h('div',{class:'line'}, h('span',{class:'num',text:'1577-0199'}), h('span',{text:'정신건강 위기상담'})),
+        h('div',{class:'line'}, h('span',{class:'num',text:'119'}), h('span',{text:'지금 위험하다면 긴급 신고'}))))),
+    h('div',{class:'box soft'}, h('p',{class:'muted',text:'이 숲의 나무는 기록과 참여를 보여 줄 뿐, 마음의 상태나 회복 정도를 나타내지 않아요. 나무가 많아지는 것이 치유 효과를 뜻하지도 않아요.'})),
+  ], {wide:true});
+}
+
+/* --- support / crisis --- */
+function openSupport(afterPlant){
+  openPanel('support', afterPlant ? '나무가 심어졌어요' : '도움이 필요할 때', [
+    afterPlant ? h('p',{class:'lead',text:'당신의 이야기가 작은 나무로 남았습니다.'}) : null,
+    h('p',{text: afterPlant ? '적어 주신 글에서 많이 지치고 힘든 마음이 느껴졌어요. 혼자 견디지 않아도 괜찮아요. 지금 이야기를 들어 줄 수 있는 곳이 있어요.' : '마음이 많이 무거울 때 바로 연락할 수 있는 곳이에요. 혼자 견디지 않아도 괜찮아요.'}),
+    h('div',{class:'box alert'}, h('div',{class:'lines'},
+      h('div',{class:'line'}, h('span',{class:'num',text:'109'}), h('span',{text:'자살예방 상담전화 · 24시간 이야기를 들어 줘요'})),
+      h('div',{class:'line'}, h('span',{class:'num',text:'1577-0199'}), h('span',{text:'정신건강 위기상담 전화'})),
+      h('div',{class:'line'}, h('span',{class:'num',text:'119'}), h('span',{text:'지금 스스로를 해칠 것 같다면 바로 연락해 주세요'})))),
+    h('p',{class:'muted',text:'가까운 사람에게 “오늘 좀 힘들어”라고 한마디 건네는 것도 도움이 돼요. 이 숲은 상담 서비스가 아니라서, 운영자가 글을 실시간으로 확인하지는 못해요.'}),
+    h('div',{class:'row end'}, h('button',{class:'btn ghost',type:'button',onclick:()=>go('rest'),text:'쉼터에 잠시 머물기'}), h('button',{class:'btn',type:'button',onclick:closePanel,text:'숲으로 돌아가기'})),
+  ]);
+}
+
+/* --- admin --- */
+function adminData(){
+  const pending=[], reports=[], deletes=[];
+  for (const q of state.queueAll){
+    for (const [id,it] of Object.entries(q.items||{})){
+      if (it.state==='pending') pending.push({uid:q.uid, id, ...it});
+      if (it.state==='delete_requested') deletes.push({uid:q.uid, id, ...it});
+    }
+    for (const [tid,r] of Object.entries(q.reports||{})) if (r.state!=='resolved') reports.push({uid:q.uid, treeId:tid, ...r});
+  }
+  pending.sort((a,b)=> (b.flags||[]).includes('crisis') - (a.flags||[]).includes('crisis') || (a.submittedAt||0)-(b.submittedAt||0));
+  return {pending, reports, deletes};
+}
+function ownerOf(treeId){ for (const q of state.queueAll) if (q.items && q.items[treeId]) return q.uid; return null; }
+function freeSlot(){ const used = new Set(state.forest.map(t=>idx(t.x,t.y))); return SLOTS.find(s=>!used.has(idx(s.x,s.y))); }
+let adminTab = 'pending';
+function openAdmin(){
+  const render = () => {
+    const a = adminData();
+    const tabs = [['pending','검토 대기',a.pending.length],['reports','신고',a.reports.length],['deletes','삭제 요청',a.deletes.length],['live','공개 중',state.forest.length]];
+    const tabBar = h('div',{class:'tabs',role:'tablist'}, ...tabs.map(([k,n,c]) => h('button',{class:'tab',type:'button',role:'tab','aria-selected':String(adminTab===k),onclick:()=>{adminTab=k; current.refresh(true);},text:`${n} ${c}`})));
+    const out = [h('p',{class:'muted',text: state.mode==='local' ? '미리보기에서는 직접 심은 공개 신청 나무로 운영실 기능을 체험할 수 있어요.' : '운영자는 작성자가 누구인지 알 수 없어요. 운영자가 확인하기 전에는 어떤 글도 숲에 공개되지 않아요.'}), tabBar];
+    const treeCard = (t, extra, actions) => h('div',{class:'card'},
+      h('div',{class:'row'}, h('span',{class:'chip',text:(EMO[t.emotion]?.ko||'')+' · '+(EMO[t.emotion]?.tree||'')}), ...(t.flags||[]).map(f=>h('span',{class:'chip '+(f==='crisis'?'alert':'amber'),text:FLAG_KO[f]})), extra),
+      t.title ? h('b',{style:'font-family:var(--f-display);font-weight:400;font-size:17px',text:t.title}) : null,
+      h('div',{class:'story',text:t.body||''}), actions);
+    if (adminTab==='pending'){
+      if (!a.pending.length) out.push(h('p',{text:'검토를 기다리는 나무가 없어요.'}));
+      for (const it of a.pending){
+        const note = h('input',{type:'text',id:'note-'+it.id,maxlength:'120',placeholder:'작성자에게 전할 메모 (수정 요청·비공개 유지 시)'});
+        const act = async (st) => {
+          try {
+            if (st==='approved'){ const s = freeSlot(); if (!s){ toast('숲에 남은 자리가 없어요.'); return; }
+              await S.setForest(it.id, {emotion:it.emotion, title:it.title||'', body:it.body||'', x:s.x, y:s.y, createdAt:it.submittedAt||Date.now(), approvedAt:Date.now()});
+              await S.adminQueueMerge(it.uid, {items:{[it.id]:{state:'approved', x:s.x, y:s.y, reviewedAt:Date.now()}}}); toast('숲에 심었어요.'); }
+            else { await S.adminQueueMerge(it.uid, {items:{[it.id]:{state:st, note:note.value.trim()||null, reviewedAt:Date.now()}}}); toast(st==='held'?'수정 요청을 보냈어요.':'비공개로 유지했어요.'); }
+          } catch(e){ writeErr(e); }
+        };
+        out.push(treeCard(it, (it.flags||[]).includes('crisis') ? h('span',{class:'muted',text:'작성자에게는 상담 정보가 안내됐어요'}) : null, h('div',{style:'display:grid;gap:8px'}, note,
+          h('div',{class:'row end'}, h('button',{class:'btn ghost small',type:'button',onclick:()=>act('kept_private'),text:'비공개 유지'}), h('button',{class:'btn ghost small',type:'button',onclick:()=>act('held'),text:'수정 요청'}), h('button',{class:'btn small',type:'button',onclick:()=>act('approved'),text:'공개 승인'})))));
+      }
+    }
+    if (adminTab==='reports'){
+      if (!a.reports.length) out.push(h('p',{text:'처리할 신고가 없어요.'}));
+      for (const r of a.reports){
+        const t = state.forest.find(f=>f.id===r.treeId);
+        const resolve = async (hide) => { try {
+          if (hide && t){ await S.delForest(t.id); const ow = ownerOf(t.id); if (ow) await S.adminQueueMerge(ow,{items:{[t.id]:{state:'hidden', reviewedAt:Date.now()}}}); }
+          await S.adminQueueMerge(r.uid,{reports:{[r.treeId]:{state:'resolved', hidden:!!hide}}}); toast(hide?'숲에서 숨겼어요.':'신고를 닫았어요.'); } catch(e){ writeErr(e); } };
+        out.push(t ? treeCard(t, h('span',{class:'chip alert',text:'신고 사유 · '+r.reason}), h('div',{class:'row end'}, h('button',{class:'btn ghost small',type:'button',onclick:()=>resolve(false),text:'문제 없음'}), h('button',{class:'btn warn small',type:'button',onclick:()=>resolve(true),text:'숲에서 숨기기'})))
+          : h('div',{class:'card'}, h('p',{text:`이미 숲에 없는 나무에 대한 신고예요 (${r.reason}).`}), h('div',{class:'row end'}, h('button',{class:'btn ghost small',type:'button',onclick:()=>resolve(false),text:'신고 닫기'}))));
+      }
+    }
+    if (adminTab==='deletes'){
+      if (!a.deletes.length) out.push(h('p',{text:'삭제 요청이 없어요.'}));
+      else out.push(h('div',{class:'row end'}, h('button',{class:'btn small',type:'button',onclick:async()=>{ try{ for (const d of a.deletes){ await S.delForest(d.id); await S.adminQueueMerge(d.uid,{items:{[d.id]:{state:'deleted', body:'', title:''}}}); } toast('요청된 나무를 모두 지웠어요.'); }catch(e){ writeErr(e);} },text:`${a.deletes.length}그루 모두 삭제 처리`})));
+      for (const d of a.deletes) out.push(treeCard(d, h('span',{class:'chip gray',text:'작성자 삭제 요청'}), null));
+    }
+    if (adminTab==='live'){
+      if (!state.forest.length) out.push(h('p',{text:'아직 숲에 공개된 나무가 없어요.'}));
+      for (const t of state.forest.slice().sort((a,b)=>(b.approvedAt||0)-(a.approvedAt||0))){
+        const conf = h('div',{class:'confirm',hidden:true}, h('span',{text:'이 나무를 숲에서 숨길까요?'}),
+          h('button',{class:'btn warn small',type:'button',onclick:async()=>{ try{ await S.delForest(t.id); const ow=ownerOf(t.id); if (ow) await S.adminQueueMerge(ow,{items:{[t.id]:{state:'hidden'}}}); toast('숲에서 숨겼어요.'); }catch(e){ writeErr(e);} },text:'숨기기'}));
+        const btn = h('button',{class:'btn ghost small',type:'button',onclick:()=>{conf.hidden=false;btn.hidden=true;},text:'숲에서 숨기기'});
+        out.push(treeCard(t, h('span',{class:'muted',text:`${STAGE_NAME[stageOf(t.x,t.y)]} 구역`}), h('div',{class:'row end'}, btn, conf)));
+      }
+    }
+    return out;
+  };
+  openPanel('admin','운영실', render(), {wide:true, refresh(force){ const pb=$('#pbody'); const st=pb.scrollTop; pb.textContent=''; pb.append(...render()); pb.scrollTop = force?0:st; }});
+}
+
+/* ===================== data wiring ===================== */
+function onData(){ rebuild(); refreshPanel(); }
+async function boot(){
+  resize(); rebuild(); requestAnimationFrame(frame);
+  const lg = $('#logo').getContext('2d'); lg.drawImage(SPR.hope,0,0);
+  if (!ls.get('forest.welcomed', false)) openGuide(true);
+  let db = null, user = null;
+  try { if (window.claude && window.claude.use){ [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]); } } catch {}
+  if (db && user){
+    let uid = null; try { uid = await user.id(); } catch {}
+    state.uid = uid; state.mode = 'remote'; S.useRemote(db);
+    try { state.admin = !!(await user.canEdit()); } catch {}
+    try { const cw = await user.can('data.write'); state.canWrite = cw !== false; } catch {}
+    if (!uid) state.canWrite = false;
+    S.subForest(d => { state.forest = d.filter(t=>inb(t.x,t.y)); onData(); });
+    if (uid){
+      S.subMine(d => { state.mine = d; onData(); });
+      S.subMyQueue(d => { state.myQueue = d; onData(); });
+    }
+    if (state.admin) S.subQueueAll(d => { state.queueAll = d; onData(); });
+  } else {
+    state.mode = 'local'; state.uid = 'local'; state.admin = true; S.useLocal();
+    S.subForest(d => { state.forest = d; onData(); });
+    S.subMine(d => { state.mine = d; onData(); });
+    S.subMyQueue(d => { state.myQueue = d; onData(); });
+    S.subQueueAll(d => { state.queueAll = d; onData(); });
+  }
+  onData();
+}
+if (document.fonts && document.fonts.load) document.fonts.load('16px Jua').catch(()=>{});
+boot();
+})();
+</script>
+
+</body>
+</html>
